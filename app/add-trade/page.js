@@ -43,6 +43,7 @@ export default function AddTradePage() {
   const goToManage = (cat) => {
     if (typeof window !== "undefined") {
       localStorage.setItem("openManageCat", cat);
+      localStorage.setItem("returnTo", "/add-trade");
       router.push("/manage");
     }
   };

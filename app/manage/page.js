@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import BottomNav from "../components/BottomNav";
 import styles from "./manage.module.css";
 
@@ -34,6 +35,7 @@ const CATEGORIES = [
 ];
 
 export default function ManagePage() {
+  const router = useRouter();
   const [data, setData] = useState(initialData);
   const [activeCategory, setActiveCategory] = useState(null);
   
@@ -66,6 +68,14 @@ export default function ManagePage() {
   const activeCatDetails = CATEGORIES.find(c => c.id === activeCategory);
 
   const closeCategory = () => {
+    if (typeof window !== "undefined") {
+      const returnTo = localStorage.getItem("returnTo");
+      if (returnTo) {
+        localStorage.removeItem("returnTo");
+        router.push(returnTo);
+        return;
+      }
+    }
     setActiveCategory(null);
     setFormState(null);
   };
