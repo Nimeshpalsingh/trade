@@ -17,7 +17,8 @@ const allTrades = [
     mistakes:["FOMO", "Overtrading", "RR Not Maintained"], 
     notes: "Good breakout trade. Followed all rules. Booked 50% at 1R and rest at target. Volume was good. Market in trending condition.",
     status: "Completed", isBookmarked: true,
-    images: [] // mock image URLs would go here
+    images: [], // mock image URLs would go here
+    videoLink: "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
   },
   { 
     id:"t2", date:"2025-05-28", time: "10:45", symbol:"BANKNIFTY", type:"Sell", 
@@ -59,6 +60,17 @@ export default function TradeDetailsPage() {
 
   const prevTrade = currentIndex > 0 ? allTrades[currentIndex - 1] : null;
   const nextTrade = currentIndex < allTrades.length - 1 ? allTrades[currentIndex + 1] : null;
+
+  const getYoutubeEmbedUrl = (url) => {
+    if (!url) return null;
+    let videoId = "";
+    if (url.includes("youtu.be/")) {
+      videoId = url.split("youtu.be/")[1]?.split("?")[0];
+    } else if (url.includes("youtube.com/watch")) {
+      videoId = new URLSearchParams(url.split("?")[1]).get("v");
+    }
+    return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+  };
 
   if (!trade) {
     return <div style={{color: "white", padding: "20px"}}>Trade not found</div>;
@@ -138,7 +150,7 @@ export default function TradeDetailsPage() {
 
       {/* Tabs */}
       <div className={styles.tabsContainer}>
-        {["Basic", "Setup", "Bias", "Notes", "Images"].map(tab => (
+        {["Basic", "Setup", "Bias", "Notes", "Media"].map(tab => (
           <button 
             key={tab}
             className={`${styles.tab} ${activeTab === tab ? styles.tabActive : ""}`}
@@ -293,10 +305,26 @@ export default function TradeDetailsPage() {
           </div>
         )}
 
-        {activeTab === "Images" && (
+        {activeTab === "Media" && (
           <div className={styles.overviewSection}>
+            {trade.videoLink && getYoutubeEmbedUrl(trade.videoLink) && (
+              <div className={styles.sectionBlock}>
+                <h3 className={styles.sectionTitle}>Screen Recording / Video</h3>
+                <div className={styles.videoWrapper}>
+                  <iframe 
+                    src={getYoutubeEmbedUrl(trade.videoLink)}
+                    title="YouTube video player"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    className={styles.videoIframe}
+                  ></iframe>
+                </div>
+              </div>
+            )}
+
             <div className={styles.sectionBlock}>
-              <h3 className={styles.sectionTitle}>Trade Screenshots</h3>
+              <h3 className={styles.sectionTitle}>Chart Screenshots</h3>
               {trade.images && trade.images.length > 0 ? (
                 <div className={styles.imagesGrid}>
                   {trade.images.map((img, i) => (

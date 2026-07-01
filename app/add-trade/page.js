@@ -70,12 +70,13 @@ export default function AddTradePage() {
   const [biases, setBiases] = useState({}); // { '1M': 'Up', '1D': 'Down' }
   const [selectedRules, setSelectedRules] = useState(["Liquidity Taken", "BOS", "CHOCH", "HTF Trend", "RSI Confirmed", "Session Confirmed"]);
 
-  // Step 3: Notes
+  // Step 4: Notes
   const [notes, setNotes] = useState("");
   const [selectedMistakes, setSelectedMistakes] = useState([]);
 
-  // Step 4: Images (Max 3)
+  // Step 5: Media (Images & Video)
   const [images, setImages] = useState([]);
+  const [videoLink, setVideoLink] = useState("");
   const fileInputRef = useRef(null);
 
   // --- Auto Calculations ---
@@ -211,7 +212,7 @@ export default function AddTradePage() {
     }, 3000);
   };
 
-  const stepNames = ["Basic", "Setup", "Bias", "Notes", "Images"];
+  const stepNames = ["Basic", "Setup", "Bias", "Notes", "Media"];
 
   return (
     <div className="page-wrapper">
@@ -467,10 +468,21 @@ export default function AddTradePage() {
               </div>
             )}
 
-            {/* ================= STEP 5: Images ================= */}
+            {/* ================= STEP 5: Media ================= */}
             {step === 5 && (
               <div className={styles.stepBlock}>
                 
+                <div className={styles.field}>
+                  <label className={styles.label}>YouTube Video Link (Optional)</label>
+                  <input 
+                    type="url" 
+                    className={styles.input} 
+                    placeholder="https://youtu.be/..." 
+                    value={videoLink} 
+                    onChange={(e) => setVideoLink(e.target.value)} 
+                  />
+                </div>
+
                 <div className={styles.field}>
                   <label className={styles.label}>Chart Screenshots ({images.length}/3)</label>
                   
