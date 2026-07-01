@@ -22,6 +22,11 @@ const initialData = {
     { id: "2", symbol: "RELIANCE", value: "0.03%" },
   ],
   mistakes: ["Overtrading", "FOMO", "Early Exit", "Wrong Trade", "No SL", "Revenge Trade", "Chasing", "Position Too Big"],
+  riskLimits: [
+    { id: "1", type: "Daily SL", value: "2000" },
+    { id: "2", type: "Weekly SL", value: "10000" },
+    { id: "3", type: "Monthly SL", value: "40000" },
+  ],
 };
 
 const CATEGORIES = [
@@ -33,6 +38,7 @@ const CATEGORIES = [
   { id: "marketTrends", title: "Market Trends", icon: "📊", desc: "Up, Down, Not Sure etc." },
   { id: "breakeven", title: "Breakeven & Charges", icon: "💰", desc: "Set brokerage and taxes per symbol" },
   { id: "mistakes", title: "Common Mistakes", icon: "⚠️", desc: "FOMO, Overtrading, No SL etc." },
+  { id: "riskLimits", title: "Risk & SL Limits", icon: "🛡️", desc: "Set Daily, Weekly, Monthly SL limits" },
 ];
 
 export default function ManagePage() {
@@ -66,6 +72,10 @@ export default function ManagePage() {
   const [sStartTime, setSStartTime] = useState("");
   const [sEndTime, setSEndTime] = useState("");
 
+  // Form input states (Risk Limits)
+  const [rType, setRType] = useState("");
+  const [rValue, setRValue] = useState("");
+
   const activeCatDetails = CATEGORIES.find(c => c.id === activeCategory);
 
   const closeCategory = () => {
@@ -88,6 +98,8 @@ export default function ManagePage() {
     setSName("");
     setSStartTime("09:15");
     setSEndTime("15:30");
+    setRType("Daily SL");
+    setRValue("");
     setFormState({ mode: "ADD" });
   };
 
@@ -100,6 +112,10 @@ export default function ManagePage() {
       setSName(item.name);
       setSStartTime(item.startTime);
       setSEndTime(item.endTime);
+      setFormState({ mode: "EDIT", item, originalId: item.id });
+    } else if (activeCategory === "riskLimits") {
+      setRType(item.type);
+      setRValue(item.value);
       setFormState({ mode: "EDIT", item, originalId: item.id });
     } else {
       setInputValue(item);
@@ -181,6 +197,22 @@ export default function ManagePage() {
           ...prev,
           sessions: prev.sessions.map(item => 
             item.id === formState.originalId ? { ...item, name: sName.trim(), startTime: sStartTime, endTime: sEndTime } : item
+          )
+        }));
+      }
+    } else if (activeCategory === "riskLimits") {
+      if (!rType.trim() || !rValue.trim()) return;
+      
+      if (formState.mode === "ADD") {
+        setData((prev) => ({
+          ...prev,
+          riskLimits: [...prev.riskLimits, { id: Date.now().toString(), type: rType.trim(), value: rValue.trim() }]
+        }));
+      } else {
+        setData((prev) => ({
+          ...prev,
+          riskLimits: prev.riskLimits.map(item => 
+            item.id === formState.originalId ? { ...item, type: rType.trim(), value: rValue.trim() } : item
           )
         }));
       }
@@ -293,6 +325,29 @@ export default function ManagePage() {
                     </div>
                   </div>
                 </>
+              ) : activeCategory === "riskLimits" ? (
+                <>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Limit Type</label>
+                    <input 
+                      type="text" 
+                      className={styles.formInput} 
+                      placeholder="e.g. Daily SL, Weekly Target"
+                      value={rType}
+                      onChange={(e) => setRType(e.target.value)}
+                    />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Amount (₹)</label>
+                    <input 
+                      type="number" 
+                      className={styles.formInput} 
+                      placeholder="e.g. 2000"
+                      value={rValue}
+                      onChange={(e) => setRValue(e.target.value)}
+                    />
+                  </div>
+                </>
               ) : (
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>{activeCatDetails?.title} Name</label>
@@ -403,6 +458,31 @@ export default function ManagePage() {
                       <line x1="5" y1="12" x2="19" y2="12" />
                     </svg>
                     Add Charges Rule
+                  </button>
+                </>
+              )}
+
+              {activeCategory === "riskLimits" && (
+                <>
+                  {data.riskLimits.map((item) => (
+                    <div key={item.id} className={styles.simpleListItem} onClick={() => openEditForm(item)}>
+                      <div className={styles.breakevenInfo}>
+                        <span className={styles.bLabel}>{item.type}</span>
+                        <span className={styles.bValue} style={{ color: "var(--loss-red)" }}>₹ {item.value}</span>
+                      </div>
+                      <button className={styles.deleteIconBtn} onClick={(e) => { e.stopPropagation(); requestDelete("riskLimits", item.id); }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--loss-red)" strokeWidth="2">
+                          <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                  <button className={styles.addBtn} onClick={openAddForm}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                    Add Risk Limit
                   </button>
                 </>
               )}
