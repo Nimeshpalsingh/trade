@@ -188,6 +188,10 @@ export default function TradeDetailsPage() {
                 <span className={styles.kvValue}>{trade.qty}</span>
               </div>
               <div className={styles.kvRow}>
+                <span className={styles.kvLabel}>Capital Used</span>
+                <span className={styles.kvValue}>₹ {(trade.entry * trade.qty * (trade.lotSize || 1)).toLocaleString("en-IN", {minimumFractionDigits: 2})}</span>
+              </div>
+              <div className={styles.kvRow}>
                 <span className={styles.kvLabel}>Charges / Brokerage</span>
                 <span className={styles.kvValue}>₹ {trade.charges.toLocaleString("en-IN")}</span>
               </div>
