@@ -20,16 +20,6 @@
   background-clip: text;
 }
 
-.badge {
-  font-size: 11px;
-  font-weight: 600;
-  padding: 5px 12px;
-  border-radius: var(--radius-full);
-  background: var(--accent-blue-bg);
-  color: var(--accent-blue);
-  border: 1px solid rgba(68, 138, 255, 0.15);
-}
-
 .main {
   padding: 16px;
   max-width: 600px;
@@ -37,6 +27,7 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  padding-bottom: 100px; /* Space for bottom nav */
 }
 
 .card {
@@ -81,130 +72,116 @@
   font-family: var(--font-mono);
 }
 
-/* Pie Chart */
-.pieRow {
+/* Filters */
+.filterRow {
   display: flex;
-  align-items: center;
-  gap: 16px;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
 }
 
-.pieChart {
-  flex: 0 0 140px;
-}
-
-.pieLegend {
-  flex: 1;
+.filterGroup {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-}
-
-.legendItem {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.legendDot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.legendName {
-  font-size: 12px;
-  color: var(--text-secondary);
-  font-weight: 500;
   flex: 1;
+  min-width: 100px;
 }
 
-.legendValue {
-  font-size: 12px;
+.filterGroup label {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.select, .dateInput {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   color: var(--text-primary);
-  font-weight: 700;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  outline: none;
+}
+
+.overallStats {
+  display: flex;
+  gap: 12px;
+}
+
+.statBox {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 12px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.statBox span {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.statBox strong {
+  font-size: 18px;
   font-family: var(--font-mono);
 }
 
-/* Session Analysis */
-.sessionList {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+.emptyText {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-style: italic;
+  text-align: center;
+  padding: 20px 0;
 }
 
-.sessionItem {
+/* Symbol Pie / Bars */
+.pieRow {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.legendItem {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.sessionTime {
-  font-size: 12px;
+.legendHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.legendName {
+  font-size: 13px;
   color: var(--text-secondary);
   font-weight: 500;
 }
 
-.sessionStats {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.sessionPnl {
+.legendValue {
   font-size: 13px;
   font-weight: 700;
-}
-
-.sessionWr {
-  font-size: 11px;
-  font-weight: 600;
   font-family: var(--font-mono);
 }
 
-.sessionBar {
+.barTrack {
   width: 100%;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: var(--radius-full);
+  height: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
   overflow: hidden;
 }
 
-.sessionBarFill {
+.barFill {
   height: 100%;
-  border-radius: var(--radius-full);
-  opacity: 0.5;
-  transition: width 0.8s ease;
-}
-
-/* Streak Grid */
-.streakGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.streakItem {
-  padding: 14px;
-  background: var(--bg-glass);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  text-align: center;
-}
-
-.streakLabel {
-  display: block;
-  font-size: 10px;
-  color: var(--text-muted);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 6px;
-}
-
-.streakValue {
-  font-size: 20px;
-  font-weight: 700;
+  border-radius: 3px;
+  transition: width 1s ease;
 }
 
 @keyframes fadeInUp {
