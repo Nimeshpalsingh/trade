@@ -19,6 +19,7 @@ const initialData = {
     { id: "1", symbol: "NIFTY", value: "₹60" },
     { id: "2", symbol: "RELIANCE", value: "0.03%" },
   ],
+  mistakes: ["Overtrading", "FOMO", "Early Exit", "Wrong Trade", "No SL", "Revenge Trade", "Chasing", "Position Too Big"],
 };
 
 const CATEGORIES = [
@@ -29,6 +30,7 @@ const CATEGORIES = [
   { id: "symbols", title: "Symbols / Shares", icon: "🏦", desc: "NIFTY, BANKNIFTY, RELIANCE" },
   { id: "marketTrends", title: "Market Trends", icon: "📊", desc: "Up, Down, Not Sure etc." },
   { id: "breakeven", title: "Breakeven & Charges", icon: "💰", desc: "Set brokerage and taxes per symbol" },
+  { id: "mistakes", title: "Common Mistakes", icon: "⚠️", desc: "FOMO, Overtrading, No SL etc." },
 ];
 
 export default function ManagePage() {

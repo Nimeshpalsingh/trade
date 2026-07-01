@@ -19,6 +19,7 @@ const MOCK_SETTINGS = {
     { id: "2", symbol: "BANKNIFTY", value: "₹65" },
     { id: "3", symbol: "RELIANCE", value: "0.03%" },
   ],
+  mistakes: ["Overtrading", "FOMO", "Early Exit", "Wrong Trade", "No SL", "Revenge Trade", "Chasing", "Position Too Big"],
 };
 
 const STRATEGY_RULES = [
@@ -31,8 +32,6 @@ const STRATEGY_RULES = [
   "News Checked",
   "Session Confirmed"
 ];
-
-const MISTAKE_OPTIONS = ["Overtrading", "FOMO", "Early Exit", "Wrong Trade", "No SL", "Revenge Trade", "Chasing", "Position Too Big"];
 
 export default function AddTradePage() {
   const [step, setStep] = useState(1);
@@ -374,7 +373,7 @@ export default function AddTradePage() {
                 <div className={styles.field}>
                   <label className={styles.label}>Mistakes Made (If Any)</label>
                   <div className={styles.mistakesWrap}>
-                    {MISTAKE_OPTIONS.map(m => (
+                    {MOCK_SETTINGS.mistakes.map(m => (
                       <button 
                         key={m} type="button" 
                         className={`${styles.mistakeChip} ${selectedMistakes.includes(m) ? styles.mistakeChipActive : ""}`} 
