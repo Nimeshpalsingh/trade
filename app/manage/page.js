@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import BottomNav from "../components/BottomNav";
 import styles from "./manage.module.css";
 
@@ -39,6 +39,17 @@ export default function ManagePage() {
   
   // formState: null | { mode: 'ADD' | 'EDIT', item: any, originalId?: string }
   const [formState, setFormState] = useState(null);
+
+  // Auto-open category if navigating from another page (e.g. Add Trade shortcuts)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const catToOpen = localStorage.getItem("openManageCat");
+      if (catToOpen) {
+        setActiveCategory(catToOpen);
+        localStorage.removeItem("openManageCat");
+      }
+    }
+  }, []);
 
   // Form input states (Simple string)
   const [inputValue, setInputValue] = useState("");

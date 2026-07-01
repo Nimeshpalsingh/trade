@@ -539,3 +539,27 @@ select.input {
 .addExitBtn:hover {
   background: rgba(68, 138, 255, 0.05);
 }
+
+/* Shortcut add buttons */
+.labelRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.addShortcutBtn {
+  background: transparent;
+  border: none;
+  color: var(--accent-blue);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  font-family: var(--font-primary);
+}
+
+.addShortcutBtn:hover {
+  background: rgba(68, 138, 255, 0.1);
+}

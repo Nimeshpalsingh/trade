@@ -33,9 +33,19 @@ const STRATEGY_RULES = [
   "Session Confirmed"
 ];
 
+import { useRouter } from "next/navigation";
+
 export default function AddTradePage() {
+  const router = useRouter();
   const [step, setStep] = useState(1);
   const [submitted, setSubmitted] = useState(false);
+  
+  const goToManage = (cat) => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("openManageCat", cat);
+      router.push("/manage");
+    }
+  };
   
   // Step 1: Basic
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
@@ -235,7 +245,10 @@ export default function AddTradePage() {
                     <input type="date" className={styles.input} value={date} onChange={(e) => setDate(e.target.value)} />
                   </div>
                   <div className={styles.field}>
-                    <label className={styles.label}>Symbol</label>
+                    <div className={styles.labelRow}>
+                      <label className={styles.label}>Symbol</label>
+                      <button type="button" className={styles.addShortcutBtn} onClick={() => goToManage('symbols')}>+ Add</button>
+                    </div>
                     <select className={styles.input} value={symbol} onChange={(e) => setSymbol(e.target.value)}>
                       {MOCK_SETTINGS.symbols.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
@@ -316,28 +329,40 @@ export default function AddTradePage() {
               <div className={styles.stepBlock}>
                 
                 <div className={styles.field}>
-                  <label className={styles.label}>Strategy / Setup</label>
+                  <div className={styles.labelRow}>
+                    <label className={styles.label}>Strategy / Setup</label>
+                    <button type="button" className={styles.addShortcutBtn} onClick={() => goToManage('setups')}>+ Add</button>
+                  </div>
                   <select className={styles.input} value={strategy} onChange={(e) => setStrategy(e.target.value)}>
                     {MOCK_SETTINGS.setups.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
 
                 <div className={styles.field}>
-                  <label className={styles.label}>Time Frame</label>
+                  <div className={styles.labelRow}>
+                    <label className={styles.label}>Time Frame</label>
+                    <button type="button" className={styles.addShortcutBtn} onClick={() => goToManage('timeFrames')}>+ Add</button>
+                  </div>
                   <select className={styles.input} value={timeFrame} onChange={(e) => setTimeFrame(e.target.value)}>
                     {MOCK_SETTINGS.timeFrames.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
                 
                 <div className={styles.field}>
-                  <label className={styles.label}>Market Condition</label>
+                  <div className={styles.labelRow}>
+                    <label className={styles.label}>Market Condition</label>
+                    <button type="button" className={styles.addShortcutBtn} onClick={() => goToManage('marketTrends')}>+ Add</button>
+                  </div>
                   <select className={styles.input} value={marketTrend} onChange={(e) => setMarketTrend(e.target.value)}>
                     {MOCK_SETTINGS.marketTrends.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
 
                 <div className={styles.field}>
-                  <label className={styles.label}>Session</label>
+                  <div className={styles.labelRow}>
+                    <label className={styles.label}>Session</label>
+                    <button type="button" className={styles.addShortcutBtn} onClick={() => goToManage('sessions')}>+ Add</button>
+                  </div>
                   <select className={styles.input} value={session} onChange={(e) => setSession(e.target.value)}>
                     {MOCK_SETTINGS.sessions.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
@@ -371,7 +396,10 @@ export default function AddTradePage() {
               <div className={styles.stepBlock}>
                 
                 <div className={styles.field}>
-                  <label className={styles.label}>Mistakes Made (If Any)</label>
+                  <div className={styles.labelRow}>
+                    <label className={styles.label}>Mistakes Made (If Any)</label>
+                    <button type="button" className={styles.addShortcutBtn} onClick={() => goToManage('mistakes')}>+ Add</button>
+                  </div>
                   <div className={styles.mistakesWrap}>
                     {MOCK_SETTINGS.mistakes.map(m => (
                       <button 
