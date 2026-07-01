@@ -1,49 +1,230 @@
+/* ===== TRADING JOURNAL - GLOBAL DESIGN SYSTEM ===== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* === Core Colors === */
+  --bg-primary: #0a0b0f;
+  --bg-secondary: #12131a;
+  --bg-card: rgba(18, 19, 30, 0.85);
+  --bg-card-hover: rgba(25, 27, 42, 0.95);
+  --bg-glass: rgba(255, 255, 255, 0.03);
+  --bg-glass-hover: rgba(255, 255, 255, 0.06);
+
+  /* === Accent Colors === */
+  --profit-green: #00e676;
+  --profit-green-bg: rgba(0, 230, 118, 0.1);
+  --profit-green-glow: rgba(0, 230, 118, 0.3);
+  --loss-red: #ff5252;
+  --loss-red-bg: rgba(255, 82, 82, 0.1);
+  --loss-red-glow: rgba(255, 82, 82, 0.3);
+  --accent-blue: #448aff;
+  --accent-blue-bg: rgba(68, 138, 255, 0.1);
+  --accent-purple: #7c4dff;
+  --accent-purple-bg: rgba(124, 77, 255, 0.1);
+  --accent-orange: #ffab40;
+  --accent-orange-bg: rgba(255, 171, 64, 0.1);
+  --accent-cyan: #18ffff;
+  --accent-cyan-bg: rgba(24, 255, 255, 0.08);
+  --accent-yellow: #ffd740;
+  --accent-yellow-bg: rgba(255, 215, 64, 0.1);
+
+  /* === Text Colors === */
+  --text-primary: #f0f0f5;
+  --text-secondary: #8a8b9e;
+  --text-muted: #5a5b70;
+  --text-accent: #b0b1c8;
+
+  /* === Border Colors === */
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-medium: rgba(255, 255, 255, 0.1);
+  --border-active: rgba(68, 138, 255, 0.4);
+
+  /* === Gradients === */
+  --gradient-primary: linear-gradient(135deg, #448aff 0%, #7c4dff 100%);
+  --gradient-profit: linear-gradient(135deg, #00e676 0%, #00c853 100%);
+  --gradient-loss: linear-gradient(135deg, #ff5252 0%, #d50000 100%);
+  --gradient-card: linear-gradient(145deg, rgba(18, 19, 30, 0.9), rgba(12, 13, 20, 0.95));
+  --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01));
+
+  /* === Shadows === */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --shadow-glow-green: 0 0 20px rgba(0, 230, 118, 0.15);
+  --shadow-glow-red: 0 0 20px rgba(255, 82, 82, 0.15);
+  --shadow-glow-blue: 0 0 20px rgba(68, 138, 255, 0.15);
+
+  /* === Spacing === */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+
+  /* === Font === */
+  --font-primary: 'Inter', -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* === Bottom Nav Height === */
+  --nav-height: 72px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ===== RESET & BASE ===== */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 html {
-  height: 100%;
-}
-
-html,
-body {
-  max-width: 100vw;
-  overflow-x: hidden;
-}
-
-body {
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-size: 16px;
+  scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-* {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
+body {
+  font-family: var(--font-primary);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  line-height: 1.5;
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
+/* Background ambient glow */
+body::before {
+  content: '';
+  position: fixed;
+  top: -30%;
+  left: -20%;
+  width: 60%;
+  height: 60%;
+  background: radial-gradient(circle, rgba(68, 138, 255, 0.04) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
+body::after {
+  content: '';
+  position: fixed;
+  bottom: -20%;
+  right: -20%;
+  width: 50%;
+  height: 50%;
+  background: radial-gradient(circle, rgba(124, 77, 255, 0.03) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar {
+  width: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
   }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 5px rgba(68, 138, 255, 0.2); }
+  50% { box-shadow: 0 0 20px rgba(68, 138, 255, 0.4); }
+}
+
+@keyframes countUp {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* ===== UTILITY CLASSES ===== */
+.glass-card {
+  background: var(--gradient-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  border-color: var(--border-medium);
+  background: var(--bg-glass-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.text-gradient {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-profit {
+  color: var(--profit-green);
+}
+
+.text-loss {
+  color: var(--loss-red);
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+/* ===== PAGE WRAPPER ===== */
+.page-wrapper {
+  min-height: 100vh;
+  padding-bottom: calc(var(--nav-height) + 20px);
+  position: relative;
+  z-index: 1;
 }

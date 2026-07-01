@@ -1,0 +1,511 @@
+.header {
+  padding: 24px 16px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  background: #000;
+  z-index: 100;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+}
+
+.iconBtn {
+  background: none;
+  border: none;
+  color: #a0a0ab;
+  padding: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.main {
+  padding: 16px;
+  padding-bottom: 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Tabs */
+.filterTabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.filterTabs::-webkit-scrollbar {
+  display: none;
+}
+
+.filterTab {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: #a0a0ab;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filterTabActive {
+  background: rgba(124, 77, 255, 0.15); /* Purple tint */
+  border-color: #7c4dff;
+  color: #fff;
+}
+
+/* Search */
+.searchContainer {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 8px 12px;
+  gap: 12px;
+}
+
+.searchIcon {
+  flex-shrink: 0;
+}
+
+.searchInput {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+}
+.searchInput::placeholder {
+  color: #5a5b70;
+}
+
+.filterIconBtn {
+  background: none;
+  border: none;
+  color: #a0a0ab;
+  padding: 4px;
+  cursor: pointer;
+}
+
+/* Trades List */
+.tradesList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tradeCard {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.tradeCard:active {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.cardRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.symbol {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.pnl {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.type {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.rr {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.metaText {
+  font-size: 12px;
+  color: #6e6f85;
+}
+
+.bookmarkIcon {
+  color: #6e6f85;
+}
+
+/* Utilities */
+.textGreen { color: #00e676; }
+.textRed { color: #ff5252; }
+
+.emptyState {
+  text-align: center;
+  color: #5a5b70;
+  padding: 40px 0;
+  font-size: 14px;
+}
+
+/* Modal */
+.modalOverlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 2000;
+  display: flex;
+  align-items: flex-end;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modalContent {
+  width: 100%;
+  background: #0f1015;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  padding-bottom: env(safe-area-inset-bottom, 20px);
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.modalTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+}
+
+.modalClose {
+  background: rgba(255, 255, 255, 0.05);
+  border: none;
+  color: #a0a0ab;
+  width: 32px; height: 32px;
+  border-radius: 16px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.modalBody {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filterLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: #6e6f85;
+}
+
+.filterSelect {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: #fff;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 14px;
+  outline: none;
+  -webkit-appearance: none;
+}
+
+.filterSelect:focus {
+  border-color: #7c4dff;
+}
+
+.dateInputs {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dateTo {
+  color: #6e6f85;
+  font-size: 13px;
+}
+
+.filterRowGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.pillGroup {
+  display: flex;
+  gap: 12px;
+}
+
+.filterPill {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: #a0a0ab;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pillActive {
+  background: rgba(124, 77, 255, 0.15);
+  border-color: #7c4dff;
+  color: #fff;
+}
+
+.modalFooter {
+  padding: 16px 20px 32px 20px;
+  display: flex;
+  gap: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.btnSecondary {
+  flex: 1;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: none;
+  border-radius: 12px;
+  color: #a0a0ab;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btnPrimary {
+  flex: 2;
+  padding: 14px;
+  background: #7c4dff;
+  border: none;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Graphical Stats Summary */
+.statsSummaryCard {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+.statsSummaryItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mistakesSection {
+  flex: 1;
+  min-width: 200px;
+}
+
+.statsSummaryDivider {
+  width: 1px;
+  height: 50px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.statGraphCircle {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.statGraphInner {
+  width: 42px;
+  height: 42px;
+  background: #000;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.statGraphValue {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.statGraphLabels {
+  display: flex;
+  flex-direction: column;
+}
+
+.statGraphTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.statGraphSub {
+  font-size: 11px;
+  color: #a0a0ab;
+}
+
+/* Setups Multi-Select */
+.setupGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.setupChip {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: #a0a0ab;
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.setupChipActive {
+  background: rgba(124, 77, 255, 0.15);
+  border-color: #7c4dff;
+  color: #fff;
+}
+
+/* Active Filter Chips (Above Stats) */
+.activeFiltersContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.activeFilterChip {
+  background: rgba(124, 77, 255, 0.1);
+  border: 1px solid rgba(124, 77, 255, 0.2);
+  color: #b388ff;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.activeFilterChip button {
+  background: none;
+  border: none;
+  color: #b388ff;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clearAllBtn {
+  background: none;
+  border: none;
+  color: #6e6f85;
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 6px 8px;
+}
+
+/* Mistakes Summary inside Stats Card */
+.mistakesSummaryGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+}
+
+.mistakeSummaryBadge {
+  background: rgba(255, 68, 68, 0.1);
+  border: 1px solid rgba(255, 68, 68, 0.2);
+  color: #ff4444;
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mistakeCount {
+  background: #ff4444;
+  color: #000;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 10px;
+}
+

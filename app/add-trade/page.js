@@ -1,0 +1,433 @@
+"use client";
+import { useState, useEffect, useRef } from "react";
+import BottomNav from "../components/BottomNav";
+import styles from "./addtrade.module.css";
+
+// Shared Mock Data (Will come from Backend/Context later)
+const MOCK_SETTINGS = {
+  setups: ["Breakout", "Pullback", "Reversal", "Fakeout", "Moving Average Bounce", "VWAP Reject"],
+  sessions: [
+    { id: "1", name: "Morning", startTime: "09:15", endTime: "11:30" },
+    { id: "2", name: "Afternoon", startTime: "13:00", endTime: "15:30" },
+    { id: "3", name: "Algo", startTime: "09:15", endTime: "15:30" }
+  ],
+  timeFrames: ["1 Minute", "3 Minutes", "5 Minutes", "15 Minutes", "1 Hour", "1 Day"],
+  symbols: ["NIFTY", "BANKNIFTY", "FINNIFTY", "RELIANCE", "HDFCBANK"],
+  marketTrends: ["Trending", "Ranging", "Volatile", "Choppy"],
+  breakeven: [
+    { id: "1", symbol: "NIFTY", value: "₹60" },
+    { id: "2", symbol: "BANKNIFTY", value: "₹65" },
+    { id: "3", symbol: "RELIANCE", value: "0.03%" },
+  ],
+};
+
+const STRATEGY_RULES = [
+  "Liquidity Taken",
+  "BOS",
+  "CHOCH",
+  "HTF Trend",
+  "Volume Confirmed",
+  "RSI Confirmed",
+  "News Checked",
+  "Session Confirmed"
+];
+
+const MISTAKE_OPTIONS = ["Overtrading", "FOMO", "Early Exit", "Wrong Trade", "No SL", "Revenge Trade", "Chasing", "Position Too Big"];
+
+export default function AddTradePage() {
+  const [step, setStep] = useState(1);
+  const [submitted, setSubmitted] = useState(false);
+  
+  // Step 1: Basic
+  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [type, setType] = useState("LONG");
+  const [symbol, setSymbol] = useState("NIFTY");
+  const [qty, setQty] = useState("");
+  const [entry, setEntry] = useState("");
+  const [exit, setExit] = useState("");
+  const [sl, setSl] = useState("");
+  
+  // Computed values
+  const [netPnl, setNetPnl] = useState(0);
+  const [rr, setRr] = useState(0);
+  const [chargesAmount, setChargesAmount] = useState(0);
+
+  // Step 2: Setup
+  const [strategy, setStrategy] = useState("Breakout");
+  const [timeFrame, setTimeFrame] = useState("15 Minutes");
+  const [marketTrend, setMarketTrend] = useState("Trending");
+  const [session, setSession] = useState("1"); // Using ID for Morning
+  const [selectedRules, setSelectedRules] = useState(["Liquidity Taken", "BOS", "CHOCH", "HTF Trend", "RSI Confirmed", "Session Confirmed"]);
+
+  // Step 3: Notes
+  const [notes, setNotes] = useState("");
+  const [selectedMistakes, setSelectedMistakes] = useState([]);
+
+  // Step 4: Images (Max 3)
+  const [images, setImages] = useState([]);
+  const fileInputRef = useRef(null);
+
+  // --- Auto Calculations ---
+  useEffect(() => {
+    const q = parseFloat(qty) || 0;
+    const en = parseFloat(entry) || 0;
+    const ex = parseFloat(exit) || 0;
+    const stop = parseFloat(sl) || 0;
+
+    if (q > 0 && en > 0 && ex > 0) {
+      // 1. Gross PnL
+      let gross = 0;
+      if (type === "LONG") gross = (ex - en) * q;
+      if (type === "SHORT") gross = (en - ex) * q;
+
+      // 2. Charges
+      let charges = 0;
+      const bRule = MOCK_SETTINGS.breakeven.find(b => b.symbol === symbol);
+      if (bRule) {
+        if (bRule.value.includes("%")) {
+          const percent = parseFloat(bRule.value.replace("%", ""));
+          // Approx turnover = (entry + exit) * qty
+          const turnover = (en + ex) * q;
+          charges = turnover * (percent / 100);
+        } else {
+          // Fixed charge (remove ₹ and parse)
+          charges = parseFloat(bRule.value.replace(/[^0-9.]/g, ""));
+        }
+      }
+      
+      setChargesAmount(charges);
+      setNetPnl(gross - charges);
+
+      // 3. Risk Reward
+      if (stop > 0) {
+        const risk = Math.abs(en - stop);
+        const reward = Math.abs(ex - en);
+        if (risk > 0) {
+          setRr((reward / risk).toFixed(2));
+        } else {
+          setRr(0);
+        }
+      } else {
+        setRr(0);
+      }
+    } else {
+      setNetPnl(0);
+      setRr(0);
+      setChargesAmount(0);
+    }
+  }, [qty, entry, exit, sl, type, symbol]);
+
+  // --- Handlers ---
+  const toggleRule = (r) => {
+    setSelectedRules(prev => prev.includes(r) ? prev.filter(x => x !== r) : [...prev, r]);
+  };
+
+  const toggleMistake = (m) => {
+    setSelectedMistakes(prev => prev.includes(m) ? prev.filter(x => x !== m) : [...prev, m]);
+  };
+
+  const handlePaste = (e) => {
+    if (step === 4) {
+      const items = e.clipboardData.items;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf("image") !== -1) {
+          const blob = items[i].getAsFile();
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            setImages(prev => {
+              if (prev.length < 3) return [...prev, e.target.result];
+              return prev;
+            });
+          };
+          reader.readAsDataURL(blob);
+          break;
+        }
+      }
+    }
+  };
+
+  useEffect(() => {
+    window.addEventListener("paste", handlePaste);
+    return () => window.removeEventListener("paste", handlePaste);
+  });
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setImages(prev => {
+          if (prev.length < 3) return [...prev, ev.target.result];
+          return prev;
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+  
+  const removeImage = (indexToRemove) => {
+    setImages(prev => prev.filter((_, index) => index !== indexToRemove));
+  };
+
+  const handleSubmit = () => {
+    setSubmitted(true);
+    setTimeout(() => {
+      setSubmitted(false);
+      setStep(1);
+    }, 3000);
+  };
+
+  const stepNames = ["Basic", "Setup", "Notes", "Images"];
+
+  return (
+    <div className="page-wrapper">
+      <header className={styles.header}>
+        <div className={styles.tabsHeader}>
+          {stepNames.map((name, index) => (
+            <div 
+              key={name} 
+              className={`${styles.tabItem} ${step === index + 1 ? styles.tabActive : ""}`}
+              onClick={() => setStep(index + 1)}
+            >
+              {name}
+            </div>
+          ))}
+        </div>
+      </header>
+
+      <main className={styles.main}>
+        {submitted ? (
+          <div className={styles.successBanner}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--profit-green)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
+            </svg>
+            Trade Saved Successfully!
+          </div>
+        ) : (
+          <div className={styles.form}>
+            {/* ================= STEP 1: Basic ================= */}
+            {step === 1 && (
+              <div className={styles.stepBlock}>
+                
+                <div className={styles.row}>
+                  <div className={styles.field}>
+                    <label className={styles.label}>Date</label>
+                    <input type="date" className={styles.input} value={date} onChange={(e) => setDate(e.target.value)} />
+                  </div>
+                  <div className={styles.field}>
+                    <label className={styles.label}>Symbol</label>
+                    <select className={styles.input} value={symbol} onChange={(e) => setSymbol(e.target.value)}>
+                      {MOCK_SETTINGS.symbols.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <div className={styles.field}>
+                  <label className={styles.label}>Trade Type</label>
+                  <div className={styles.typeGroup}>
+                    <button type="button" className={`${styles.typeBtn} ${type === "LONG" ? styles.typeLong : ""}`} onClick={() => setType("LONG")}>LONG</button>
+                    <button type="button" className={`${styles.typeBtn} ${type === "SHORT" ? styles.typeShort : ""}`} onClick={() => setType("SHORT")}>SHORT</button>
+                  </div>
+                </div>
+
+                <div className={styles.row}>
+                  <div className={styles.field}>
+                    <label className={styles.label}>Quantity</label>
+                    <input type="number" className={styles.input} placeholder="e.g. 50" value={qty} onChange={(e) => setQty(e.target.value)} />
+                  </div>
+                  <div className={styles.field}>
+                    <label className={styles.label}>Entry Price</label>
+                    <input type="number" className={styles.input} placeholder="0.00" value={entry} onChange={(e) => setEntry(e.target.value)} />
+                  </div>
+                </div>
+
+                <div className={styles.row}>
+                  <div className={styles.field}>
+                    <label className={styles.label}>Exit Price</label>
+                    <input type="number" className={styles.input} placeholder="0.00" value={exit} onChange={(e) => setExit(e.target.value)} />
+                  </div>
+                  <div className={styles.field}>
+                    <label className={styles.label}>Stop Loss (SL)</label>
+                    <input type="number" className={styles.input} placeholder="0.00" value={sl} onChange={(e) => setSl(e.target.value)} />
+                  </div>
+                </div>
+
+                <div className={styles.autoCalcBox}>
+                  <div className={styles.calcItem}>
+                    <span className={styles.calcLabel}>Charges</span>
+                    <span className={styles.calcValue}>₹{chargesAmount.toFixed(2)}</span>
+                  </div>
+                  <div className={styles.calcItem}>
+                    <span className={styles.calcLabel}>Net PnL</span>
+                    <span className={`${styles.calcValue} ${netPnl > 0 ? styles.profitText : netPnl < 0 ? styles.lossText : ""}`}>
+                      ₹{netPnl.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className={styles.calcItem}>
+                    <span className={styles.calcLabel}>R:R</span>
+                    <span className={styles.calcValue}>{rr > 0 ? `1 : ${rr}` : "-"}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ================= STEP 2: Setup ================= */}
+            {step === 2 && (
+              <div className={styles.stepBlock}>
+                
+                <div className={styles.field}>
+                  <label className={styles.label}>Strategy / Setup</label>
+                  <select className={styles.input} value={strategy} onChange={(e) => setStrategy(e.target.value)}>
+                    {MOCK_SETTINGS.setups.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+
+                <div className={styles.field}>
+                  <label className={styles.label}>Time Frame</label>
+                  <select className={styles.input} value={timeFrame} onChange={(e) => setTimeFrame(e.target.value)}>
+                    {MOCK_SETTINGS.timeFrames.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+                
+                <div className={styles.field}>
+                  <label className={styles.label}>Market Condition</label>
+                  <select className={styles.input} value={marketTrend} onChange={(e) => setMarketTrend(e.target.value)}>
+                    {MOCK_SETTINGS.marketTrends.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+
+                <div className={styles.field}>
+                  <label className={styles.label}>Session</label>
+                  <select className={styles.input} value={session} onChange={(e) => setSession(e.target.value)}>
+                    {MOCK_SETTINGS.sessions.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                </div>
+                
+                <div className={styles.rulesList}>
+                  {STRATEGY_RULES.map(rule => (
+                    <label key={rule} className={styles.ruleCheckboxLabel}>
+                      <div className={`${styles.customCheckbox} ${selectedRules.includes(rule) ? styles.customCheckboxChecked : ""}`}>
+                        {selectedRules.includes(rule) && (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        )}
+                      </div>
+                      <input 
+                        type="checkbox" 
+                        style={{ display: "none" }}
+                        checked={selectedRules.includes(rule)}
+                        onChange={() => toggleRule(rule)}
+                      />
+                      <span>{rule}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ================= STEP 3: Notes ================= */}
+            {step === 3 && (
+              <div className={styles.stepBlock}>
+                
+                <div className={styles.field}>
+                  <label className={styles.label}>Mistakes Made (If Any)</label>
+                  <div className={styles.mistakesWrap}>
+                    {MISTAKE_OPTIONS.map(m => (
+                      <button 
+                        key={m} type="button" 
+                        className={`${styles.mistakeChip} ${selectedMistakes.includes(m) ? styles.mistakeChipActive : ""}`} 
+                        onClick={() => toggleMistake(m)}
+                      >
+                        {m}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className={styles.field}>
+                  <label className={styles.label}>Journal Notes</label>
+                  <textarea 
+                    className={`${styles.input} ${styles.textarea}`} 
+                    placeholder="Why did you take this trade? How did you feel?" 
+                    rows={6} 
+                    value={notes} 
+                    onChange={(e) => setNotes(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* ================= STEP 4: Images ================= */}
+            {step === 4 && (
+              <div className={styles.stepBlock}>
+                
+                <div className={styles.field}>
+                  <label className={styles.label}>Chart Screenshots ({images.length}/3)</label>
+                  
+                  {images.length > 0 && (
+                    <div className={styles.imageGrid}>
+                      {images.map((img, index) => (
+                        <div key={index} className={styles.imagePreviewBox}>
+                          <img src={img} alt={`Screenshot ${index + 1}`} className={styles.previewImg} />
+                          <button type="button" className={styles.removeImgBtn} onClick={() => removeImage(index)}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <line x1="18" y1="6" x2="6" y2="18" />
+                              <line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {images.length < 3 && (
+                    <div className={styles.pasteArea} onClick={() => fileInputRef.current.click()}>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                        <circle cx="8.5" cy="8.5" r="1.5"/>
+                        <polyline points="21 15 16 10 5 21"/>
+                      </svg>
+                      <p>Click to Upload or Paste Image (Ctrl+V)</p>
+                      <span style={{fontSize: "12px", color: "var(--text-muted)"}}>You can add {3 - images.length} more image{3 - images.length > 1 ? "s" : ""}</span>
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        ref={fileInputRef} 
+                        style={{ display: "none" }} 
+                        onChange={handleImageUpload} 
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Navigation Buttons */}
+            <div className={styles.stepNav}>
+              {step > 1 ? (
+                <button type="button" className={styles.navBtnOutline} onClick={() => setStep(step - 1)}>
+                  Back
+                </button>
+              ) : <div></div>}
+              
+              {step < 4 ? (
+                <button type="button" className={styles.navBtnPrimary} onClick={() => setStep(step + 1)}>
+                  Next
+                </button>
+              ) : (
+                <button type="button" className={styles.submitBtn} onClick={handleSubmit}>
+                  Save Trade
+                </button>
+              )}
+            </div>
+            
+          </div>
+        )}
+      </main>
+
+      <BottomNav />
+    </div>
+  );
+}

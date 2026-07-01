@@ -1,0 +1,579 @@
+/* ===== PNL PAGE — ZERODHA STYLE ===== */
+
+.header {
+  padding: 16px 20px 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(10, 11, 15, 0.92);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.headerTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.headerBadge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  background: var(--bg-glass);
+  border: 1px solid var(--border-subtle);
+}
+
+/* Period Tabs — Zerodha underline style */
+.periodTabs {
+  display: flex;
+  gap: 0;
+}
+
+.periodTab {
+  padding: 10px 18px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--font-primary);
+  position: relative;
+}
+
+.periodTab:hover {
+  color: var(--text-secondary);
+}
+
+.periodTabActive {
+  color: var(--accent-blue);
+  border-bottom-color: var(--accent-blue);
+}
+
+/* ===== MAIN ===== */
+.main {
+  padding: 0 16px 24px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Custom Date Filter */
+.customDateContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 12px;
+  border-radius: 12px;
+}
+
+.dateInput {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  outline: none;
+  font-family: inherit;
+}
+
+.dateInput::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.5;
+  cursor: pointer;
+}
+
+.dateTo {
+  color: #6e6f85;
+  font-size: 13px;
+}
+
+/* ===== ZERODHA 1-LINE STRIP ===== */
+.zerodhaSummaryStrip {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin: 0 16px 24px 16px;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.zerodhaSummaryStrip::-webkit-scrollbar {
+  display: none;
+}
+
+.zSummaryItem {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.zSummaryLabel {
+  font-size: 12px;
+  color: #a0a0ab;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.zSummaryValue {
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.zSummaryOp {
+  font-size: 18px;
+  color: #6e6f85;
+  font-weight: 300;
+  flex-shrink: 0;
+}
+
+/* ===== QUICK STATS ===== */
+.quickStats {
+  display: flex;
+  align-items: center;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  animation: fadeInUp 0.5s ease;
+}
+
+.qStat {
+  flex: 1;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.qLabel {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.qValue {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.qDivider {
+  width: 1px;
+  height: 32px;
+  background: var(--border-subtle);
+}
+
+/* ===== CHART ===== */
+.chartSection {
+  padding: 20px 0;
+  animation: fadeInUp 0.55s ease;
+}
+
+.chartLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+.chartWrap {
+  width: 100%;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 14px 8px 8px;
+}
+
+/* ===== ZERODHA TOOLTIP ===== */
+.zTooltip {
+  background: rgba(18, 19, 30, 0.97);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 12px 16px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  min-width: 160px;
+}
+
+.zTooltipDate {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.zTooltipGrid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 14px;
+}
+
+.zTooltipLabel {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.zTooltipVal {
+  font-size: 13px;
+  font-weight: 600;
+  text-align: right;
+}
+
+/* Calendar Heatmap */
+.heatmapSection {
+  margin-top: 24px;
+  padding: 0 16px;
+}
+
+.heatmapContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-top: 12px;
+}
+
+.calendarMonth {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.calendarMonthTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: #e2e2e9;
+  margin-top: 0;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.calendarGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.calHeader {
+  font-size: 11px;
+  color: #6e6f85;
+  text-align: center;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.calCell, .calCellEmpty {
+  aspect-ratio: 1;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.calCell {
+  background: rgba(255, 255, 255, 0.03);
+  position: relative;
+}
+
+.calCellProfit {
+  background: rgba(0, 230, 118, 0.1);
+  border: 1px solid rgba(0, 230, 118, 0.2);
+}
+
+.calCellLoss {
+  background: rgba(255, 82, 82, 0.1);
+  border: 1px solid rgba(255, 82, 82, 0.2);
+}
+
+.calDayNum {
+  font-size: 12px;
+  color: #a0a0ab;
+  position: absolute;
+  top: 4px;
+  left: 6px;
+}
+
+.calCellProfit .calDayNum, .calCellLoss .calDayNum {
+  color: #fff;
+  font-weight: 600;
+}
+
+.calDayPnl {
+  font-size: 10px;
+  margin-top: 12px;
+  font-weight: 700;
+}
+
+.emptyHeatmap {
+  text-align: center;
+  color: #5a5b70;
+  padding: 40px;
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 12px;
+}
+
+/* ===== MAX STRIP ===== */
+.maxStrip {
+  display: flex;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  animation: fadeInUp 0.6s ease;
+}
+
+.maxItem {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.maxLabel {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.maxValue {
+  font-size: 13px;
+  font-weight: 700;
+  margin-left: auto;
+}
+
+.maxDivider {
+  width: 1px;
+  height: 24px;
+  background: var(--border-subtle);
+  margin: 0 16px;
+}
+
+/* ===== TABLE ===== */
+.tableSection {
+  padding-top: 16px;
+  animation: fadeInUp 0.65s ease;
+}
+
+.tableHeader {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 0.8fr 0.5fr;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  border: 1px solid var(--border-subtle);
+  border-bottom: none;
+}
+
+.tableHeaderCell {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.right {
+  text-align: right;
+}
+
+.tableBody {
+  border: 1px solid var(--border-subtle);
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  overflow: hidden;
+}
+
+.tableRow {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 0.8fr 0.5fr;
+  padding: 12px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  transition: background 0.15s ease;
+  align-items: center;
+}
+
+.tableRow:last-child {
+  border-bottom: none;
+}
+
+.tableRow:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.tableCell {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.datePrimary {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.dateSub {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== MODAL CSS ===== */
+.modalOverlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 2000;
+  display: flex;
+  align-items: flex-end;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modalContent {
+  width: 100%;
+  background: #0f1015;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  padding-bottom: env(safe-area-inset-bottom, 20px);
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.modalTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+}
+
+.modalClose {
+  background: rgba(255, 255, 255, 0.05);
+  border: none;
+  color: #a0a0ab;
+  width: 32px; height: 32px;
+  border-radius: 16px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.modalBody {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filterLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: #6e6f85;
+}
+
+.filterSelect {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: #fff;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 14px;
+  outline: none;
+  -webkit-appearance: none;
+}
+
+.filterSelect:focus {
+  border-color: #7c4dff;
+}
+
+.dateInputs {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.modalFooter {
+  padding: 16px 20px 32px 20px;
+  display: flex;
+  gap: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.btnPrimary, .btnSecondary {
+  flex: 1;
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+}
+
+.btnPrimary {
+  background: #7c4dff;
+  color: #fff;
+}
+
+.btnSecondary {
+  background: rgba(255, 255, 255, 0.05);
+  color: #e2e2e9;
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
