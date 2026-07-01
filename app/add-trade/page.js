@@ -183,8 +183,9 @@ export default function AddTradePage() {
   });
 
   const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
+    const files = Array.from(e.target.files);
+    
+    files.forEach(file => {
       const reader = new FileReader();
       reader.onload = (ev) => {
         setImages(prev => {
@@ -193,7 +194,9 @@ export default function AddTradePage() {
         });
       };
       reader.readAsDataURL(file);
-    }
+    });
+    
+    if (e.target) e.target.value = "";
   };
   
   const removeImage = (indexToRemove) => {
@@ -499,6 +502,7 @@ export default function AddTradePage() {
                       <input 
                         type="file" 
                         accept="image/*" 
+                        multiple
                         ref={fileInputRef} 
                         style={{ display: "none" }} 
                         onChange={handleImageUpload} 
