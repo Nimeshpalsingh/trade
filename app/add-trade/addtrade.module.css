@@ -474,3 +474,68 @@ select.input {
 .submitBtn {
   margin-top: 0;
 }
+
+/* Partial Exits */
+.exitsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed var(--border-medium);
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+
+.exitsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.exitsList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.exitRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.removeExitBtn {
+  background: rgba(255, 82, 82, 0.1);
+  color: var(--loss-red);
+  border: 1px solid rgba(255, 82, 82, 0.2);
+  padding: 10px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.removeExitBtn:hover {
+  background: rgba(255, 82, 82, 0.2);
+}
+
+.addExitBtn {
+  background: transparent;
+  color: var(--accent-blue);
+  border: 1px dashed var(--accent-blue);
+  padding: 12px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 4px;
+}
+
+.addExitBtn:hover {
+  background: rgba(68, 138, 255, 0.05);
+}

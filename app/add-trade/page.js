@@ -44,7 +44,7 @@ export default function AddTradePage() {
   const [symbol, setSymbol] = useState("NIFTY");
   const [qty, setQty] = useState("");
   const [entry, setEntry] = useState("");
-  const [exit, setExit] = useState("");
+  const [exits, setExits] = useState([{ qty: "", price: "" }]);
   const [sl, setSl] = useState("");
   
   // Computed values
@@ -71,14 +71,27 @@ export default function AddTradePage() {
   useEffect(() => {
     const q = parseFloat(qty) || 0;
     const en = parseFloat(entry) || 0;
-    const ex = parseFloat(exit) || 0;
     const stop = parseFloat(sl) || 0;
 
-    if (q > 0 && en > 0 && ex > 0) {
+    const hasValidExit = exits.some(ex => (parseFloat(ex.qty) || 0) > 0 && (parseFloat(ex.price) || 0) > 0);
+
+    if (q > 0 && en > 0 && hasValidExit) {
       // 1. Gross PnL
       let gross = 0;
-      if (type === "LONG") gross = (ex - en) * q;
-      if (type === "SHORT") gross = (en - ex) * q;
+      let turnover = 0;
+      let totalExitedQty = 0;
+      let totalExitValue = 0;
+      
+      exits.forEach(ex => {
+        const exQ = parseFloat(ex.qty) || 0;
+        const exP = parseFloat(ex.price) || 0;
+        if (exQ > 0 && exP > 0) {
+          totalExitedQty += exQ;
+          totalExitValue += (exQ * exP);
+          if (type === "LONG") gross += (exP - en) * exQ;
+          if (type === "SHORT") gross += (en - exP) * exQ;
+        }
+      });
 
       // 2. Charges
       let charges = 0;
@@ -86,11 +99,9 @@ export default function AddTradePage() {
       if (bRule) {
         if (bRule.value.includes("%")) {
           const percent = parseFloat(bRule.value.replace("%", ""));
-          // Approx turnover = (entry + exit) * qty
-          const turnover = (en + ex) * q;
+          turnover = (en * totalExitedQty) + totalExitValue;
           charges = turnover * (percent / 100);
         } else {
-          // Fixed charge (remove ₹ and parse)
           charges = parseFloat(bRule.value.replace(/[^0-9.]/g, ""));
         }
       }
@@ -99,9 +110,10 @@ export default function AddTradePage() {
       setNetPnl(gross - charges);
 
       // 3. Risk Reward
-      if (stop > 0) {
+      if (stop > 0 && totalExitedQty > 0) {
+        const avgExitPrice = totalExitValue / totalExitedQty;
         const risk = Math.abs(en - stop);
-        const reward = Math.abs(ex - en);
+        const reward = Math.abs(avgExitPrice - en);
         if (risk > 0) {
           setRr((reward / risk).toFixed(2));
         } else {
@@ -115,9 +127,17 @@ export default function AddTradePage() {
       setRr(0);
       setChargesAmount(0);
     }
-  }, [qty, entry, exit, sl, type, symbol]);
+  }, [qty, entry, exits, sl, type, symbol]);
 
   // --- Handlers ---
+  const addExit = () => setExits([...exits, { qty: "", price: "" }]);
+  const removeExit = (index) => setExits(exits.filter((_, i) => i !== index));
+  const updateExit = (index, field, value) => {
+    const newExits = [...exits];
+    newExits[index][field] = value;
+    setExits(newExits);
+  };
+
   const toggleRule = (r) => {
     setSelectedRules(prev => prev.includes(r) ? prev.filter(x => x !== r) : [...prev, r]);
   };
@@ -233,7 +253,7 @@ export default function AddTradePage() {
 
                 <div className={styles.row}>
                   <div className={styles.field}>
-                    <label className={styles.label}>Quantity</label>
+                    <label className={styles.label}>Total Quantity</label>
                     <input type="number" className={styles.input} placeholder="e.g. 50" value={qty} onChange={(e) => setQty(e.target.value)} />
                   </div>
                   <div className={styles.field}>
@@ -242,15 +262,35 @@ export default function AddTradePage() {
                   </div>
                 </div>
 
-                <div className={styles.row}>
-                  <div className={styles.field}>
-                    <label className={styles.label}>Exit Price</label>
-                    <input type="number" className={styles.input} placeholder="0.00" value={exit} onChange={(e) => setExit(e.target.value)} />
+                <div className={styles.field}>
+                  <label className={styles.label}>Stop Loss (SL)</label>
+                  <input type="number" className={styles.input} placeholder="0.00" value={sl} onChange={(e) => setSl(e.target.value)} />
+                </div>
+
+                <div className={styles.exitsSection}>
+                  <div className={styles.exitsHeader}>
+                    <label className={styles.label}>Exit Points (Partial Booking/Trailing)</label>
                   </div>
-                  <div className={styles.field}>
-                    <label className={styles.label}>Stop Loss (SL)</label>
-                    <input type="number" className={styles.input} placeholder="0.00" value={sl} onChange={(e) => setSl(e.target.value)} />
+                  <div className={styles.exitsList}>
+                    {exits.map((ex, idx) => (
+                      <div key={idx} className={styles.exitRow}>
+                        <div className={styles.field}>
+                          <input type="number" className={styles.input} placeholder="Exit Qty" value={ex.qty} onChange={(e) => updateExit(idx, "qty", e.target.value)} />
+                        </div>
+                        <div className={styles.field}>
+                          <input type="number" className={styles.input} placeholder="Exit Price" value={ex.price} onChange={(e) => updateExit(idx, "price", e.target.value)} />
+                        </div>
+                        {exits.length > 1 && (
+                          <button type="button" className={styles.removeExitBtn} onClick={() => removeExit(idx)}>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                          </button>
+                        )}
+                      </div>
+                    ))}
                   </div>
+                  <button type="button" className={styles.addExitBtn} onClick={addExit}>
+                    + Add Partial Exit
+                  </button>
                 </div>
 
                 <div className={styles.autoCalcBox}>

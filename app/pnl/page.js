@@ -258,12 +258,6 @@ export default function PnlPage() {
         <div className={styles.headerTop}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <h1 className={styles.title}>P&L Statement</h1>
-            <div className={styles.headerBadge}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-              </svg>
-              Zerodha Style
-            </div>
           </div>
           <button 
             className={styles.iconBtn} 
