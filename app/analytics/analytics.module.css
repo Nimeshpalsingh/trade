@@ -199,13 +199,16 @@
   padding-bottom: 20px;
 }
 .modalContent {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
+  background: rgba(10, 11, 15, 0.98);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-medium);
   border-radius: 20px;
   width: 95%;
   max-width: 400px;
-  padding: 20px;
-  animation: slideUp 0.3s ease forwards;
+  padding: 24px;
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
 }
 @keyframes slideUp {
   from { transform: translateY(100%); opacity: 0; }
