@@ -563,3 +563,73 @@ select.input {
 .addShortcutBtn:hover {
   background: rgba(68, 138, 255, 0.1);
 }
+
+/* Bias Grid */
+.biasGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  margin-top: 4px;
+}
+
+.biasRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+}
+
+.biasRow:last-child {
+  border-bottom: none;
+}
+
+.biasTf {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  width: 70px;
+}
+
+.biasOptions {
+  display: flex;
+  gap: 6px;
+}
+
+.biasBtn {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 6px 10px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.biasBtn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.biasUp {
+  background: var(--profit-green-bg);
+  border-color: rgba(0, 230, 118, 0.3);
+  color: var(--profit-green);
+}
+
+.biasDown {
+  background: var(--loss-red-bg);
+  border-color: rgba(255, 82, 82, 0.3);
+  color: var(--loss-red);
+}
+
+.biasNeutral {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--text-primary);
+}

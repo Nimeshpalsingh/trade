@@ -67,6 +67,7 @@ export default function AddTradePage() {
   const [timeFrame, setTimeFrame] = useState("15 Minutes");
   const [marketTrend, setMarketTrend] = useState("Trending");
   const [session, setSession] = useState("1"); // Using ID for Morning
+  const [biases, setBiases] = useState({}); // { '1M': 'Up', '1D': 'Down' }
   const [selectedRules, setSelectedRules] = useState(["Liquidity Taken", "BOS", "CHOCH", "HTF Trend", "RSI Confirmed", "Session Confirmed"]);
 
   // Step 3: Notes
@@ -367,6 +368,36 @@ export default function AddTradePage() {
                   <select className={styles.input} value={session} onChange={(e) => setSession(e.target.value)}>
                     {MOCK_SETTINGS.sessions.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
+                </div>
+
+                <div className={styles.field}>
+                  <div className={styles.labelRow}>
+                    <label className={styles.label}>Multi-Timeframe Bias (Optional)</label>
+                  </div>
+                  <div className={styles.biasGrid}>
+                    {["1 Month", "1 Week", "1 Day", "4 Hours", "1 Hour", "30 Min", "15 Min", "5 Min", "3 Min", "1 Min"].map(tf => (
+                      <div key={tf} className={styles.biasRow}>
+                        <span className={styles.biasTf}>{tf}</span>
+                        <div className={styles.biasOptions}>
+                          <button 
+                            type="button" 
+                            className={`${styles.biasBtn} ${biases[tf] === 'Up' ? styles.biasUp : ''}`}
+                            onClick={() => setBiases(prev => ({...prev, [tf]: prev[tf] === 'Up' ? null : 'Up'}))}
+                          >Up</button>
+                          <button 
+                            type="button" 
+                            className={`${styles.biasBtn} ${biases[tf] === 'Down' ? styles.biasDown : ''}`}
+                            onClick={() => setBiases(prev => ({...prev, [tf]: prev[tf] === 'Down' ? null : 'Down'}))}
+                          >Down</button>
+                          <button 
+                            type="button" 
+                            className={`${styles.biasBtn} ${biases[tf] === 'Not Sure' ? styles.biasNeutral : ''}`}
+                            onClick={() => setBiases(prev => ({...prev, [tf]: prev[tf] === 'Not Sure' ? null : 'Not Sure'}))}
+                          >Not Sure</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
                 
                 <div className={styles.rulesList}>
