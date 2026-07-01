@@ -52,7 +52,7 @@ const allTrades = [
 export default function TradeDetailsPage() {
   const params = useParams();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("Overview");
+  const [activeTab, setActiveTab] = useState("Basic");
   
   const currentIndex = allTrades.findIndex(t => t.id === params.id);
   const trade = allTrades[currentIndex];
@@ -138,7 +138,7 @@ export default function TradeDetailsPage() {
 
       {/* Tabs */}
       <div className={styles.tabsContainer}>
-        {["Overview", "Chart", "Notes", "Images"].map(tab => (
+        {["Basic", "Setup", "Bias", "Notes", "Images"].map(tab => (
           <button 
             key={tab}
             className={`${styles.tab} ${activeTab === tab ? styles.tabActive : ""}`}
@@ -151,15 +151,8 @@ export default function TradeDetailsPage() {
 
       {/* Content */}
       <main className={styles.main}>
-        {activeTab === "Overview" && (
+        {activeTab === "Basic" && (
           <div className={styles.overviewSection}>
-            
-            {/* Quick Context Tags */}
-            <div className={styles.contextTags}>
-              <span className={styles.contextTag}>Trend: {trade.trend}</span>
-              <span className={styles.contextTag}>Session: {trade.session}</span>
-            </div>
-
             {/* Key Value Pairs */}
             <div className={styles.kvList}>
               <div className={styles.kvRow}>
@@ -212,23 +205,17 @@ export default function TradeDetailsPage() {
                 </div>
               </div>
             )}
+          </div>
+        )}
 
-            {/* Bias Section */}
-            {trade.biases && Object.keys(trade.biases).length > 0 && (
-              <div className={styles.sectionBlock}>
-                <h3 className={styles.sectionTitle}>Multi-Timeframe Bias</h3>
-                <div className={styles.biasGridDisplay}>
-                  {Object.entries(trade.biases).map(([tf, bias]) => (
-                    <div key={tf} className={styles.biasDisplayRow}>
-                      <span className={styles.biasDisplayTf}>{tf}</span>
-                      <span className={`${styles.biasDisplayVal} ${bias === 'Up' ? styles.textGreen : bias === 'Down' ? styles.textRed : ""}`}>
-                        {bias}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+        {activeTab === "Setup" && (
+          <div className={styles.overviewSection}>
+            {/* Quick Context Tags */}
+            <div className={styles.contextTags}>
+              {trade.setups && trade.setups.map(s => <span key={s} className={styles.contextTag}>Setup: {s}</span>)}
+              <span className={styles.contextTag}>Trend: {trade.trend}</span>
+              <span className={styles.contextTag}>Session: {trade.session}</span>
+            </div>
 
             {/* Strategy Rules Section */}
             <div className={styles.sectionBlock}>
@@ -248,7 +235,36 @@ export default function TradeDetailsPage() {
                 )}
               </div>
             </div>
+          </div>
+        )}
 
+        {activeTab === "Bias" && (
+          <div className={styles.overviewSection}>
+            {/* Bias Section */}
+            {trade.biases && Object.keys(trade.biases).length > 0 ? (
+              <div className={styles.sectionBlock}>
+                <h3 className={styles.sectionTitle}>Multi-Timeframe Bias</h3>
+                <div className={styles.biasGridDisplay}>
+                  {Object.entries(trade.biases).map(([tf, bias]) => (
+                    <div key={tf} className={styles.biasDisplayRow}>
+                      <span className={styles.biasDisplayTf}>{tf}</span>
+                      <span className={`${styles.biasDisplayVal} ${bias === 'Up' ? styles.textGreen : bias === 'Down' ? styles.textRed : ""}`}>
+                        {bias}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className={styles.emptyTab}>
+                No Multi-Timeframe Bias added for this trade.
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === "Notes" && (
+          <div className={styles.overviewSection}>
             {/* Mistakes Section */}
             <div className={styles.sectionBlock}>
               <h3 className={styles.sectionTitle}>Mistakes</h3>
@@ -268,11 +284,6 @@ export default function TradeDetailsPage() {
               </div>
             </div>
 
-          </div>
-        )}
-
-        {activeTab === "Notes" && (
-          <div className={styles.overviewSection}>
              <div className={styles.sectionBlock}>
               <h3 className={styles.sectionTitle}>Trade Notes</h3>
               <div className={styles.notesBox}>
@@ -301,11 +312,6 @@ export default function TradeDetailsPage() {
           </div>
         )}
 
-        {activeTab === "Chart" && (
-          <div className={styles.emptyTab}>
-            Interactive Chart feature coming soon.
-          </div>
-        )}
       </main>
     </div>
   );
