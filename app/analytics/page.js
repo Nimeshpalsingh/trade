@@ -208,9 +208,34 @@ export default function AnalyticsPage() {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
               </svg>
-              {hasAdvFilters ? "Filtered" : "Advanced"}
+              Advanced
             </button>
           </div>
+
+          {/* Active Filter Chips */}
+          {hasAdvFilters && (
+            <div className={styles.activeFilters}>
+              {advFilters.symbol && (
+                <span className={styles.filterChip}>
+                  {advFilters.symbol}
+                  <button onClick={() => setAdvFilters(p => ({ ...p, symbol: "" }))}>&times;</button>
+                </span>
+              )}
+              {advFilters.session && (
+                <span className={styles.filterChip}>
+                  {advFilters.session.split(" (")[0]} {/* Show short name */}
+                  <button onClick={() => setAdvFilters(p => ({ ...p, session: "" }))}>&times;</button>
+                </span>
+              )}
+              {advFilters.setup && (
+                <span className={styles.filterChip}>
+                  {advFilters.setup}
+                  <button onClick={() => setAdvFilters(p => ({ ...p, setup: "" }))}>&times;</button>
+                </span>
+              )}
+            </div>
+          )}
+
           <div className={styles.overallStats}>
             <div className={styles.statBox}>
               <span>Trades</span>
