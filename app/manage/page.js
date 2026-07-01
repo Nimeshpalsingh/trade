@@ -332,9 +332,9 @@ export default function ManagePage() {
                     <input 
                       type="text" 
                       className={styles.formInput} 
-                      placeholder="e.g. Daily SL, Weekly Target"
                       value={rType}
-                      onChange={(e) => setRType(e.target.value)}
+                      disabled
+                      style={{ opacity: 0.7, cursor: "not-allowed" }}
                     />
                   </div>
                   <div className={styles.formGroup}>
@@ -470,20 +470,15 @@ export default function ManagePage() {
                         <span className={styles.bLabel}>{item.type}</span>
                         <span className={styles.bValue} style={{ color: "var(--loss-red)" }}>₹ {item.value}</span>
                       </div>
-                      <button className={styles.deleteIconBtn} onClick={(e) => { e.stopPropagation(); requestDelete("riskLimits", item.id); }}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--loss-red)" strokeWidth="2">
-                          <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                      <div className={styles.deleteIconBtn} style={{ color: "var(--text-secondary)" }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                         </svg>
-                      </button>
+                      </div>
                     </div>
                   ))}
-                  <button className={styles.addBtn} onClick={openAddForm}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <line x1="12" y1="5" x2="12" y2="19" />
-                      <line x1="5" y1="12" x2="19" y2="12" />
-                    </svg>
-                    Add Risk Limit
-                  </button>
+                  {/* No Add button for Risk Limits, they are fixed */}
                 </>
               )}
             </div>
