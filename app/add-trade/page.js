@@ -158,7 +158,7 @@ export default function AddTradePage() {
   };
 
   const handlePaste = (e) => {
-    if (step === 4) {
+    if (step === 5) {
       const items = e.clipboardData.items;
       for (let i = 0; i < items.length; i++) {
         if (items[i].type.indexOf("image") !== -1) {
@@ -208,7 +208,7 @@ export default function AddTradePage() {
     }, 3000);
   };
 
-  const stepNames = ["Basic", "Setup", "Notes", "Images"];
+  const stepNames = ["Basic", "Setup", "Bias", "Notes", "Images"];
 
   return (
     <div className="page-wrapper">
@@ -370,6 +370,33 @@ export default function AddTradePage() {
                   </select>
                 </div>
 
+                
+                <div className={styles.rulesList}>
+                  {STRATEGY_RULES.map(rule => (
+                    <label key={rule} className={styles.ruleCheckboxLabel}>
+                      <div className={`${styles.customCheckbox} ${selectedRules.includes(rule) ? styles.customCheckboxChecked : ""}`}>
+                        {selectedRules.includes(rule) && (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        )}
+                      </div>
+                      <input 
+                        type="checkbox" 
+                        style={{ display: "none" }}
+                        checked={selectedRules.includes(rule)}
+                        onChange={() => toggleRule(rule)}
+                      />
+                      <span>{rule}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ================= STEP 3: Bias ================= */}
+            {step === 3 && (
+              <div className={styles.stepBlock}>
                 <div className={styles.field}>
                   <div className={styles.labelRow}>
                     <label className={styles.label}>Multi-Timeframe Bias (Optional)</label>
@@ -399,32 +426,11 @@ export default function AddTradePage() {
                     ))}
                   </div>
                 </div>
-                
-                <div className={styles.rulesList}>
-                  {STRATEGY_RULES.map(rule => (
-                    <label key={rule} className={styles.ruleCheckboxLabel}>
-                      <div className={`${styles.customCheckbox} ${selectedRules.includes(rule) ? styles.customCheckboxChecked : ""}`}>
-                        {selectedRules.includes(rule) && (
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                        )}
-                      </div>
-                      <input 
-                        type="checkbox" 
-                        style={{ display: "none" }}
-                        checked={selectedRules.includes(rule)}
-                        onChange={() => toggleRule(rule)}
-                      />
-                      <span>{rule}</span>
-                    </label>
-                  ))}
-                </div>
               </div>
             )}
 
-            {/* ================= STEP 3: Notes ================= */}
-            {step === 3 && (
+            {/* ================= STEP 4: Notes ================= */}
+            {step === 4 && (
               <div className={styles.stepBlock}>
                 
                 <div className={styles.field}>
@@ -458,8 +464,8 @@ export default function AddTradePage() {
               </div>
             )}
 
-            {/* ================= STEP 4: Images ================= */}
-            {step === 4 && (
+            {/* ================= STEP 5: Images ================= */}
+            {step === 5 && (
               <div className={styles.stepBlock}>
                 
                 <div className={styles.field}>
@@ -511,7 +517,7 @@ export default function AddTradePage() {
                 </button>
               ) : <div></div>}
               
-              {step < 4 ? (
+              {step < 5 ? (
                 <button type="button" className={styles.navBtnPrimary} onClick={() => setStep(step + 1)}>
                   Next
                 </button>
