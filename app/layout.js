@@ -1,4 +1,5 @@
 import "./globals.css";
+import AuthProvider from "./components/AuthProvider";
 
 export const metadata = {
   title: "TradeJournal Pro - Smart Trading Analytics",
@@ -14,7 +15,9 @@ export default function RootLayout({ children }) {
         <meta name="theme-color" content="#0a0b0f" />
       </head>
       <body>
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );
