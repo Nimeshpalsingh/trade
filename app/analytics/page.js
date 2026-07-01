@@ -63,6 +63,15 @@ export default function AnalyticsPage() {
   const [customStart, setCustomStart] = useState(firstDay.toISOString().split("T")[0]);
   const [customEnd, setCustomEnd] = useState(lastDay.toISOString().split("T")[0]);
 
+  // Adv Filters
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [advFilters, setAdvFilters] = useState({
+    symbol: "",
+    session: "",
+    setup: ""
+  });
+  const hasAdvFilters = advFilters.symbol || advFilters.session || advFilters.setup;
+
   // Filter Trades
   const filteredTrades = useMemo(() => {
     let start = new Date(0);
@@ -80,11 +89,17 @@ export default function AnalyticsPage() {
       end.setHours(23, 59, 59, 999);
     }
 
-    return allTrades.filter(t => {
+    let result = allTrades.filter(t => {
       const td = new Date(t.date);
       return td >= start && td <= end;
     });
-  }, [dateRange, customStart, customEnd]);
+
+    if (advFilters.symbol) result = result.filter(t => t.symbol === advFilters.symbol);
+    if (advFilters.session) result = result.filter(t => t.session === advFilters.session);
+    if (advFilters.setup) result = result.filter(t => t.setups.includes(advFilters.setup));
+
+    return result;
+  }, [dateRange, customStart, customEnd, advFilters]);
 
   // 1. Setup Analytics
   const setupData = useMemo(() => {
@@ -185,6 +200,16 @@ export default function AnalyticsPage() {
                 </div>
               </>
             )}
+
+            <button 
+              className={`${styles.filterIconBtn} ${hasAdvFilters ? styles.active : ""}`}
+              onClick={() => setIsFilterModalOpen(true)}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+              </svg>
+              {hasAdvFilters ? "Filtered" : "Advanced"}
+            </button>
           </div>
           <div className={styles.overallStats}>
             <div className={styles.statBox}>
@@ -310,6 +335,54 @@ export default function AnalyticsPage() {
         </div>
 
       </main>
+
+      {/* Advanced Filter Modal */}
+      {isFilterModalOpen && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <div className={styles.modalHeader}>
+              <h3>Advanced Filters</h3>
+              <button className={styles.closeBtn} onClick={() => setIsFilterModalOpen(false)}>&times;</button>
+            </div>
+            <div className={styles.modalBody}>
+              <div>
+                <label className={styles.advFilterLabel}>Symbol</label>
+                <select className={styles.advFilterSelect} value={advFilters.symbol} onChange={(e) => setAdvFilters(prev => ({...prev, symbol: e.target.value}))}>
+                  <option value="">All Symbols</option>
+                  <option value="NIFTY">NIFTY</option>
+                  <option value="BANKNIFTY">BANKNIFTY</option>
+                  <option value="RELIANCE">RELIANCE</option>
+                  <option value="TCS">TCS</option>
+                </select>
+              </div>
+              <div>
+                <label className={styles.advFilterLabel}>Session</label>
+                <select className={styles.advFilterSelect} value={advFilters.session} onChange={(e) => setAdvFilters(prev => ({...prev, session: e.target.value}))}>
+                  <option value="">All Sessions</option>
+                  <option value="Morning (9:15 - 11:30)">Morning</option>
+                  <option value="Afternoon (11:30 - 13:30)">Afternoon</option>
+                  <option value="Late (13:30 - 15:30)">Late</option>
+                </select>
+              </div>
+              <div>
+                <label className={styles.advFilterLabel}>Setup</label>
+                <select className={styles.advFilterSelect} value={advFilters.setup} onChange={(e) => setAdvFilters(prev => ({...prev, setup: e.target.value}))}>
+                  <option value="">All Setups</option>
+                  <option value="Breakout">Breakout</option>
+                  <option value="Reversal">Reversal</option>
+                  <option value="Pullback">Pullback</option>
+                  <option value="Liquidity Grab">Liquidity Grab</option>
+                  <option value="FOMO Trade">FOMO Trade</option>
+                </select>
+              </div>
+            </div>
+            <div className={styles.modalFooter}>
+              <button className={styles.modalBtn} onClick={() => setAdvFilters({ symbol: "", session: "", setup: "" })}>Clear</button>
+              <button className={`${styles.modalBtn} ${styles.modalBtnPrimary}`} onClick={() => setIsFilterModalOpen(false)}>Apply</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <BottomNav />
     </div>
