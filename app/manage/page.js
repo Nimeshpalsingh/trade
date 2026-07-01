@@ -387,7 +387,7 @@ export default function ManagePage() {
           ) : (
             /* === LIST VIEW === */
             <div className={styles.fullScreenList}>
-              {activeCategory !== "breakeven" && activeCategory !== "sessions" && (
+              {activeCategory !== "breakeven" && activeCategory !== "sessions" && activeCategory !== "riskLimits" && (
                 <>
                   {data[activeCategory].map((item) => (
                     <div key={item} className={styles.simpleListItem} onClick={() => openEditForm(item)}>
