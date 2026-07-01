@@ -304,6 +304,9 @@ export default function Dashboard() {
   const dailySLPercent = Math.min((slStats.worstDailyLoss / slStats.dailySLLimit) * 100, 100);
   const monthlySLPercent = Math.min((slStats.monthlyTotalLoss / slStats.monthlySLLimit) * 100, 100);
 
+  const currentMonthName = new Date().toLocaleString("en-US", { month: "long" });
+  const pnlTitle = period === "1m" ? `${currentMonthName.toUpperCase()} PNL` : `${currentLabel?.toUpperCase()} PNL`;
+
   return (
     <div className="page-wrapper">
       {/* Header */}
@@ -337,7 +340,7 @@ export default function Dashboard() {
         {/* Total PnL Hero */}
         <div className={`${styles.pnlHero} glass-card`} style={{ animationDelay: "0.05s", marginTop: "16px" }}>
           <div className={styles.pnlHeroTop}>
-            <span className={styles.pnlLabel}>Total PnL</span>
+            <span className={styles.pnlLabel}>{pnlTitle}</span>
             <span className={`${styles.pnlBadge} ${stats.totalPnl >= 0 ? styles.pnlBadgeGreen : styles.pnlBadgeRed}`}>
               {stats.totalPnl >= 0 ? "PROFIT" : "LOSS"}
             </span>
