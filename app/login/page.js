@@ -1,18 +1,16 @@
 "use client";
 import { signIn } from "next-auth/react";
 import styles from "./login.module.css";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
-export default function LoginPage() {
+function LoginContent() {
   const [isLoading, setIsLoading] = useState(false);
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/";
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);
-    // This will redirect to Google login.
-    // Make sure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are in .env
     await signIn("google", { callbackUrl });
   };
 
@@ -63,5 +61,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div style={{ background: '#0a0b0f', minHeight: '100vh' }}></div>}>
+      <LoginContent />
+    </Suspense>
   );
 }
