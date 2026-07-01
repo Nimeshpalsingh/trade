@@ -1,6 +1,7 @@
 "use client";
 import { useState, useMemo } from "react";
 import BottomNav from "../components/BottomNav";
+import PnlChart from "../components/PnlChart";
 import styles from "./analytics.module.css";
 import {
   ResponsiveContainer,
@@ -165,8 +166,33 @@ export default function AnalyticsPage() {
     return Object.values(map).sort((a, b) => b.totalLoss - a.totalLoss);
   }, [filteredTrades]);
 
+  // 5. Equity Curve (Cumulative PnL)
+  const equityData = useMemo(() => {
+    // Group by date first
+    const byDate = {};
+    filteredTrades.forEach(t => {
+      if (!byDate[t.date]) byDate[t.date] = 0;
+      byDate[t.date] += t.pnl;
+    });
+
+    // Sort by date
+    const dayEntries = Object.entries(byDate).sort((a, b) => new Date(a[0]) - new Date(b[0]));
+    
+    // Accumulate
+    let cumulative = 0;
+    return dayEntries.map(([date, pnl]) => {
+      cumulative += pnl;
+      return {
+        date: new Date(date).toLocaleDateString("en-IN", { day: "numeric", month: "short" }),
+        pnl: +cumulative.toFixed(2),
+        dailyPnl: +pnl.toFixed(2),
+      };
+    });
+  }, [filteredTrades]);
+
   const totalWins = filteredTrades.filter(t => t.pnl > 0).length;
   const overallWinRate = filteredTrades.length > 0 ? Math.round((totalWins / filteredTrades.length) * 100) : 0;
+  const totalPnl = filteredTrades.reduce((acc, t) => acc + t.pnl, 0);
 
   return (
     <div className="page-wrapper">
@@ -245,6 +271,18 @@ export default function AnalyticsPage() {
               <span>Overall Win Rate</span>
               <strong className="text-profit">{overallWinRate}%</strong>
             </div>
+          </div>
+        </div>
+
+        {/* Equity Curve */}
+        <div className={`${styles.card} glass-card`}>
+          <h3 className={styles.cardTitle}>Equity Curve</h3>
+          <div className={styles.chartBody} style={{ height: "220px" }}>
+            {equityData.length > 0 ? (
+              <PnlChart data={equityData} isProfit={totalPnl >= 0} />
+            ) : (
+              <p className={styles.emptyText}>No data for equity curve.</p>
+            )}
           </div>
         </div>
 
