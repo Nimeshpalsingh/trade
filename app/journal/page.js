@@ -76,6 +76,13 @@ export default function JournalPage() {
     return `${y}-${m}-${day}`;
   };
 
+  // Helper to format Date for Display as '1 July 2026'
+  const formatDateDisplay = (dateString) => {
+    if (!dateString) return "";
+    const options = { day: 'numeric', month: 'long', year: 'numeric' };
+    return new Date(dateString).toLocaleDateString('en-GB', options);
+  };
+
   // Calculate This Month's Start and End Dates
   const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
   const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
@@ -249,7 +256,7 @@ export default function JournalPage() {
         <div className={styles.activeFiltersContainer}>
           {advFilters.startDate && advFilters.endDate && (
             <div className={styles.activeFilterChip}>
-              {advFilters.startDate} to {advFilters.endDate}
+              {formatDateDisplay(advFilters.startDate)} to {formatDateDisplay(advFilters.endDate)}
               <button onClick={() => setAdvFilters(prev => ({...prev, startDate: "", endDate: ""}))}>✕</button>
             </div>
           )}
