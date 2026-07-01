@@ -21,24 +21,7 @@ const currentYear = today.getFullYear();
 const currentMonth = String(today.getMonth() + 1).padStart(2, '0');
 
 // Extended Mock Data for Analytics
-const allTrades = [
-  { id:"t1", date:`${currentYear}-${currentMonth}-02`, symbol:"NIFTY", pnl: 4500, rr: 2.2, session: "Morning (9:15 - 11:30)", setups:["Breakout"], mistakes:[] },
-  { id:"t2", date:`${currentYear}-${currentMonth}-03`, symbol:"BANKNIFTY", pnl: -2100, rr: -1.0, session: "Morning (9:15 - 11:30)", setups:["Liquidity Grab"], mistakes:["FOMO"] },
-  { id:"t3", date:`${currentYear}-${currentMonth}-04`, symbol:"RELIANCE", pnl: 6800, rr: 3.2, session: "Afternoon (11:30 - 13:30)", setups:["Reversal"], mistakes:[] },
-  { id:"t4", date:`${currentYear}-${currentMonth}-05`, symbol:"NIFTY", pnl: 3460, rr: 1.5, session: "Late (13:30 - 15:30)", setups:["Breakout"], mistakes:["Early Exit"] },
-  { id:"t5", date:`${currentYear}-${currentMonth}-06`, symbol:"BANKNIFTY", pnl: -1250, rr: -0.8, session: "Late (13:30 - 15:30)", setups:["FOMO Trade"], mistakes:["FOMO", "Overtrading"] },
-  { id:"t6", date:`${currentYear}-${currentMonth}-09`, symbol:"NIFTY", pnl: 8100, rr: 4.1, session: "Morning (9:15 - 11:30)", setups:["Pullback"], mistakes:[] },
-  { id:"t7", date:`${currentYear}-${currentMonth}-10`, symbol:"TCS", pnl: 1200, rr: 1.1, session: "Afternoon (11:30 - 13:30)", setups:["Breakout"], mistakes:[] },
-  { id:"t8", date:`${currentYear}-${currentMonth}-11`, symbol:"BANKNIFTY", pnl: -4500, rr: -2.0, session: "Morning (9:15 - 11:30)", setups:["Reversal"], mistakes:["Revenge Trading"] },
-  { id:"t9", date:`${currentYear}-${currentMonth}-12`, symbol:"NIFTY", pnl: 5400, rr: 2.6, session: "Late (13:30 - 15:30)", setups:["Pullback"], mistakes:[] },
-  { id:"t10", date:`${currentYear}-${currentMonth}-16`, symbol:"RELIANCE", pnl: -3200, rr: -1.4, session: "Morning (9:15 - 11:30)", setups:["Breakout"], mistakes:["No SL"] },
-  { id:"t11", date:`${currentYear}-${currentMonth}-17`, symbol:"NIFTY", pnl: 7200, rr: 3.5, session: "Afternoon (11:30 - 13:30)", setups:["Liquidity Grab"], mistakes:[] },
-  { id:"t12", date:`${currentYear}-${currentMonth}-18`, symbol:"BANKNIFTY", pnl: 3800, rr: 1.8, session: "Late (13:30 - 15:30)", setups:["Breakout"], mistakes:[] },
-  { id:"t13", date:`${currentYear}-${currentMonth}-19`, symbol:"NIFTY", pnl: -1800, rr: -0.9, session: "Morning (9:15 - 11:30)", setups:["FOMO Trade"], mistakes:["FOMO"] },
-  { id:"t14", date:`${currentYear}-${currentMonth}-23`, symbol:"BANKNIFTY", pnl: 9500, rr: 4.8, session: "Morning (9:15 - 11:30)", setups:["Reversal"], mistakes:[] },
-  { id:"t15", date:`${currentYear}-${currentMonth}-24`, symbol:"TCS", pnl: -2400, rr: -1.2, session: "Afternoon (11:30 - 13:30)", setups:["Pullback"], mistakes:["Overtrading"] },
-  { id:"t16", date:`${currentYear}-${currentMonth}-25`, symbol:"NIFTY", pnl: 2900, rr: 1.4, session: "Late (13:30 - 15:30)", setups:["Breakout"], mistakes:[] },
-];
+import allTrades from "../data/trades.json";
 
 const COLORS = ["#448aff", "#7c4dff", "#00e676", "#ffab40", "#ff5252", "#e040fb"];
 

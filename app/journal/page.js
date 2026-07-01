@@ -9,54 +9,7 @@ const today = new Date();
 const currentYear = today.getFullYear();
 const currentMonth = String(today.getMonth() + 1).padStart(2, '0');
 
-// Extended Mock Data for Advanced View (Updated to current month so they show by default)
-const allTrades = [
-  { 
-    id:"t1", date:`${currentYear}-${currentMonth}-02`, time: "09:15 AM", symbol:"NIFTY 50", type:"Buy", 
-    qty: 50, entry: 22550.25, exit: 22750.50, sl: 22450.00, target: 22850.00, 
-    lotSize: 1, pnl:12525.00, rr: 2.99, roi: 2.50, mode: "Live", trend: "Up", session: "Morning (9:15 - 11:30)",
-    setups:["Breakout"], timeframe: "15m", 
-    mistakes:["FOMO", "Overtrading", "RR Not Maintained"], 
-    notes: "Good breakout trade. Followed all rules. Booked 50% at 1R and rest at target. Volume was good. Market in trending condition.",
-    status: "Completed", isBookmarked: true
-  },
-  { 
-    id:"t2", date:`${currentYear}-${currentMonth}-05`, time: "10:45 AM", symbol:"BANKNIFTY", type:"Sell", 
-    qty: 15, entry: 52400.00, exit: 52520.00, sl: 52300.00, target: 52000.00,
-    lotSize: 1, pnl:-2150.00, rr: -1.0, roi: -0.5, mode: "Live", trend: "Sideways", session: "Morning (9:15 - 11:30)",
-    setups:["Liquidity Grab"], timeframe: "5m", 
-    mistakes:["FOMO", "Revenge Trading"], 
-    notes: "Got chopped out. Market was sideways.",
-    status: "Completed", isBookmarked: true
-  },
-  { 
-    id:"t3", date:`${currentYear}-${currentMonth}-12`, time: "11:30 AM", symbol:"RELIANCE", type:"Buy", 
-    qty: 100, entry: 3120.00, exit: 3188.00, sl: 3100.00, target: 3200.00,
-    lotSize: 1, pnl:6800.00, rr: 3.2, roi: 2.1, mode: "Paper", trend: "Up", session: "Afternoon (11:30 - 13:30)",
-    setups:["Reversal"], timeframe: "15m", 
-    mistakes:[], 
-    notes: "Perfect bounce from daily support.",
-    status: "Completed", isBookmarked: true
-  },
-  { 
-    id:"t4", date:`${currentYear}-${currentMonth}-18`, time: "02:15 PM", symbol:"NIFTY 50", type:"Buy", 
-    qty: 50, entry: 22600.00, exit: 22669.20, sl: 22550.00, target: 22750.00,
-    lotSize: 1, pnl:3460.00, rr: 1.5, roi: 0.8, mode: "Live", trend: "Up", session: "Late (13:30 - 15:30)",
-    setups:["Breakout"], timeframe: "15m", 
-    mistakes:["Early Exit"], 
-    notes: "Got scared and exited early.",
-    status: "Completed", isBookmarked: false
-  },
-  { 
-    id:"t5", date:`${currentYear}-${currentMonth}-21`, time: "03:05 PM", symbol:"BANKNIFTY", type:"Sell", 
-    qty: 15, entry: 52600.00, exit: 52683.33, sl: 52700.00, target: 52400.00,
-    lotSize: 1, pnl:-1250.00, rr: -0.8, roi: -0.3, mode: "Live", trend: "Down", session: "Late (13:30 - 15:30)",
-    setups:["FOMO Trade"], timeframe: "5m", 
-    mistakes:["FOMO", "Overtrading"], 
-    notes: "Should not have traded in the last hour.",
-    status: "Completed", isBookmarked: false
-  }
-];
+import allTrades from "../data/trades.json";
 
 const AVAILABLE_SETUPS = ["Breakout", "Reversal", "Pullback", "Liquidity Grab", "FOMO Trade", "Moving Average Bounce"];
 const AVAILABLE_SESSIONS = ["Morning (9:15 - 11:30)", "Afternoon (11:30 - 13:30)", "Late (13:30 - 15:30)"];
