@@ -190,25 +190,26 @@
 .modalOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(5px);
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  z-index: 999;
+  z-index: 99999;
   padding-bottom: 20px;
 }
 .modalContent {
-  background: rgba(10, 11, 15, 0.98);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--border-medium);
+  background: #0a0b0f;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 20px;
   width: 95%;
   max-width: 400px;
   padding: 24px;
   animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-  z-index: 1000;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.8);
+  z-index: 100000;
+  position: relative;
 }
 @keyframes slideUp {
   from { transform: translateY(100%); opacity: 0; }
@@ -277,6 +278,8 @@
   gap: 6px;
   font-size: 12px;
   font-weight: 600;
+  height: 38px;
+  align-self: flex-end;
 }
 .filterIconBtn.active {
   border-color: var(--accent-purple);
