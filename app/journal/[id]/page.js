@@ -7,10 +7,12 @@ import styles from "./tradeDetails.module.css";
 const allTrades = [
   { 
     id:"t1", date:"2025-05-28", time: "09:15", symbol:"NIFTY 50", type:"Buy", 
-    qty: 50, entry: 22550.25, exit: 22750.50, sl: 22450.00, target: 22850.00, 
+    qty: 50, entry: 22550.25, exit: 22700.25, sl: 22450.00, target: 22850.00, 
+    partialExits: [{ qty: 25, price: 22650.00 }, { qty: 25, price: 22750.50 }],
     lotSize: 1, pnl:12525.00, rr: 2.99, roi: 2.50, charges: 125,
     mode: "Live", trend: "Up", session: "Morning (9:15 - 11:30)",
     setups:["Breakout"], timeframe: "15m", 
+    biases: { "1 Month": "Up", "1 Week": "Up", "1 Day": "Up", "1 Hour": "Not Sure" },
     strategyRules: ["Liquidity Taken", "BOS", "CHOCH"],
     mistakes:["FOMO", "Overtrading", "RR Not Maintained"], 
     notes: "Good breakout trade. Followed all rules. Booked 50% at 1R and rest at target. Volume was good. Market in trending condition.",
@@ -20,9 +22,11 @@ const allTrades = [
   { 
     id:"t2", date:"2025-05-28", time: "10:45", symbol:"BANKNIFTY", type:"Sell", 
     qty: 15, entry: 52400.00, exit: 52520.00, sl: 52300.00, target: 52000.00,
+    partialExits: [{ qty: 15, price: 52520.00 }],
     lotSize: 1, pnl:-2150.00, rr: -1.0, roi: -0.5, charges: 80,
     mode: "Live", trend: "Sideways", session: "Morning (9:15 - 11:30)",
     setups:["Liquidity Grab"], timeframe: "5m", 
+    biases: { "1 Day": "Down", "15 Min": "Down" },
     strategyRules: ["Inducement", "Fair Value Gap"],
     mistakes:["FOMO", "Revenge Trading"], 
     notes: "Got chopped out. Market was sideways.",
@@ -32,9 +36,11 @@ const allTrades = [
   { 
     id:"t3", date:"2025-05-28", time: "11:30", symbol:"RELIANCE", type:"Buy", 
     qty: 100, entry: 3120.00, exit: 3188.00, sl: 3100.00, target: 3200.00,
+    partialExits: [{ qty: 100, price: 3188.00 }],
     lotSize: 1, pnl:6800.00, rr: 3.2, roi: 2.1, charges: 45,
     mode: "Live", trend: "Up", session: "Afternoon (11:30 - 13:30)",
     setups:["Reversal"], timeframe: "15m", 
+    biases: { "1 Week": "Up", "1 Day": "Up" },
     strategyRules: ["BOS"],
     mistakes:[], 
     notes: "Perfect bounce from daily support.",
@@ -161,7 +167,7 @@ export default function TradeDetailsPage() {
                 <span className={styles.kvValue}>{trade.entry.toLocaleString("en-IN", {minimumFractionDigits: 2})}</span>
               </div>
               <div className={styles.kvRow}>
-                <span className={styles.kvLabel}>Exit Price</span>
+                <span className={styles.kvLabel}>Avg. Exit Price</span>
                 <span className={styles.kvValue}>{trade.exit.toLocaleString("en-IN", {minimumFractionDigits: 2})}</span>
               </div>
               <div className={styles.kvRow}>
@@ -191,6 +197,38 @@ export default function TradeDetailsPage() {
                 </span>
               </div>
             </div>
+
+            {/* Partial Exits Section */}
+            {trade.partialExits && trade.partialExits.length > 0 && (
+              <div className={styles.sectionBlock}>
+                <h3 className={styles.sectionTitle}>Exits Breakdown</h3>
+                <div className={styles.exitsList}>
+                  {trade.partialExits.map((ex, idx) => (
+                    <div key={idx} className={styles.exitRow}>
+                      <span className={styles.exitQty}>{ex.qty} Qty</span>
+                      <span className={styles.exitPrice}>@ ₹{ex.price.toLocaleString("en-IN", {minimumFractionDigits: 2})}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Bias Section */}
+            {trade.biases && Object.keys(trade.biases).length > 0 && (
+              <div className={styles.sectionBlock}>
+                <h3 className={styles.sectionTitle}>Multi-Timeframe Bias</h3>
+                <div className={styles.biasGridDisplay}>
+                  {Object.entries(trade.biases).map(([tf, bias]) => (
+                    <div key={tf} className={styles.biasDisplayRow}>
+                      <span className={styles.biasDisplayTf}>{tf}</span>
+                      <span className={`${styles.biasDisplayVal} ${bias === 'Up' ? styles.textGreen : bias === 'Down' ? styles.textRed : ""}`}>
+                        {bias}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Strategy Rules Section */}
             <div className={styles.sectionBlock}>

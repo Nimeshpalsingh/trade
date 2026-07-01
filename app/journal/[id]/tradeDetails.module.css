@@ -286,3 +286,61 @@
   font-size: 14px;
 }
 
+/* Exits Breakdown */
+.exitsList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.exitRow {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+}
+.exitRow:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.exitQty {
+  color: #a0a0ab;
+  font-size: 13px;
+}
+.exitPrice {
+  color: #fff;
+  font-weight: 500;
+  font-size: 13px;
+}
+
+/* Bias Display Grid */
+.biasGridDisplay {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.biasDisplayRow {
+  display: flex;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.biasDisplayTf {
+  font-size: 13px;
+  color: #a0a0ab;
+}
+
+.biasDisplayVal {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+}
+
