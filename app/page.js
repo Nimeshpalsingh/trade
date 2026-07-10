@@ -1,10 +1,10 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import BottomNav from "./components/BottomNav";
 import PnlChart from "./components/PnlChart";
 import styles from "./dashboard.module.css";
-import allTrades from "./data/trades.json";
+import { fetchAndProcessTrades } from "./utils/tradeUtils";
 
 const PERIOD_OPTIONS = [
   { label: "This Month", value: "1m" },
@@ -193,7 +193,19 @@ export default function Dashboard() {
   const router = useRouter();
   const period = "1m"; // Fixed to This Month
 
-  const filtered = useMemo(() => getFilteredTrades(allTrades, period), [period]);
+  const [allTrades, setAllTrades] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      const data = await fetchAndProcessTrades();
+      setAllTrades(data);
+      setIsLoading(false);
+    };
+    loadData();
+  }, []);
+
+  const filtered = useMemo(() => getFilteredTrades(allTrades, period), [allTrades, period]);
   const stats = useMemo(() => calculateStats(filtered), [filtered]);
   const streak = useMemo(() => calculateStreak(filtered), [filtered]);
   const slStats = useMemo(() => calculateSLStats(filtered), [filtered]);
@@ -249,7 +261,11 @@ export default function Dashboard() {
       </header>
 
       <main className={styles.main}>
-        {/* Total PnL Hero */}
+        {isLoading ? (
+          <div style={{ textAlign: "center", padding: "40px", color: "var(--text-muted)" }}>Loading trades...</div>
+        ) : (
+          <>
+            {/* Total PnL Hero */}
         <div className={`${styles.pnlHero} glass-card`} style={{ animationDelay: "0.05s", marginTop: "16px" }}>
           <div className={styles.pnlHeroTop}>
             <span className={styles.pnlLabel}>{pnlTitle}</span>
@@ -564,6 +580,8 @@ export default function Dashboard() {
             </div>
           )}
         </div>
+        </>
+        )}
       </main>
 
       <BottomNav />

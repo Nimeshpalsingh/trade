@@ -27,6 +27,7 @@ const initialData = {
     { id: "2", type: "Weekly SL", value: "10000" },
     { id: "3", type: "Monthly SL", value: "40000" },
   ],
+  rules: ["Liquidity Taken", "BOS", "CHOCH", "HTF Trend", "Volume Confirmed", "RSI Confirmed", "News Checked", "Session Confirmed"],
 };
 
 const CATEGORIES = [
@@ -37,6 +38,7 @@ const CATEGORIES = [
   { id: "symbols", title: "Symbols / Shares", icon: "🏦", desc: "NIFTY, BANKNIFTY, RELIANCE" },
   { id: "marketTrends", title: "Market Trends", icon: "📊", desc: "Up, Down, Not Sure etc." },
   { id: "breakeven", title: "Breakeven & Charges", icon: "💰", desc: "Set brokerage and taxes per symbol" },
+  { id: "rules", title: "Strategy Rules", icon: "✅", desc: "BOS, CHOCH, Liquidity etc." },
   { id: "mistakes", title: "Common Mistakes", icon: "⚠️", desc: "FOMO, Overtrading, No SL etc." },
   { id: "riskLimits", title: "Risk & SL Limits", icon: "🛡️", desc: "Set Daily, Weekly, Monthly SL limits" },
 ];
@@ -48,6 +50,44 @@ export default function ManagePage() {
   
   // formState: null | { mode: 'ADD' | 'EDIT', item: any, originalId?: string }
   const [formState, setFormState] = useState(null);
+  
+  const [toast, setToast] = useState({ show: false, message: "" });
+  const showToast = (msg) => {
+    setToast({ show: true, message: msg });
+    setTimeout(() => setToast({ show: false, message: "" }), 3000);
+  };
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch("http://localhost:8000/api/settings", {
+          headers: {
+            "Accept": "application/json",
+            "Authorization": "Bearer 1|6Jz5W4mBp114wk1fmxxjjg3bPNKHBrEsiHjnSEW2c20da63f"
+          }
+        });
+        if (res.ok) {
+          const apiData = await res.json();
+          setData(prev => ({
+            ...prev,
+            setups: [...new Set(apiData.setups.map(s => s.name.trim()))],
+            sessions: apiData.sessions.map(s => ({ id: s.id.toString(), name: s.name.trim(), startTime: s.start_time, endTime: s.end_time })),
+            timeFrames: [...new Set(apiData.timeFrames.map(s => s.name.trim()))],
+            symbols: [...new Set(apiData.symbols.map(s => s.name.trim()))],
+            marketTrends: [...new Set(apiData.marketTrends.map(s => s.name.trim()))],
+            marketTypes: apiData.marketTypes ? [...new Set(apiData.marketTypes.map(s => s.name.trim()))] : prev.marketTypes,
+            mistakes: [...new Set(apiData.mistakes.map(s => s.name.trim()))],
+            rules: [...new Set(apiData.rules.map(s => s.name.trim()))],
+            breakeven: apiData.symbols.filter(s => s.breakeven_value).map(s => ({ id: s.id.toString(), symbol: s.name, value: s.breakeven_value })),
+            riskLimits: apiData.riskLimits ? apiData.riskLimits.map(s => ({ id: s.id.toString(), type: s.type, value: s.value })) : prev.riskLimits
+          }));
+        }
+      } catch (e) {
+        console.error("Failed to fetch settings", e);
+      }
+    };
+    fetchSettings();
+  }, []);
 
   // Auto-open category if navigating from another page (e.g. Add Trade shortcuts)
   useEffect(() => {
@@ -124,7 +164,7 @@ export default function ManagePage() {
   };
 
   const handleDelete = (category, itemToDelete) => {
-    if (category === "breakeven" || category === "sessions") {
+    if (category === "breakeven" || category === "sessions" || category === "riskLimits") {
       setData((prev) => ({
         ...prev,
         [category]: prev[category].filter((item) => item.id !== itemToDelete),
@@ -149,7 +189,7 @@ export default function ManagePage() {
     setDeletePrompt({ isOpen: true, category, itemToDelete, step: 1 });
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     const { category, itemToDelete, step } = deletePrompt;
     
     if (category === "symbols" && step === 1) {
@@ -158,25 +198,62 @@ export default function ManagePage() {
       return;
     }
 
+    const token = "1|6Jz5W4mBp114wk1fmxxjjg3bPNKHBrEsiHjnSEW2c20da63f";
+    const headers = { "Content-Type": "application/json", "Authorization": `Bearer ${token}` };
+    
+    let endpoint = "";
+    if (category === "setups") endpoint = "setups";
+    else if (category === "timeFrames") endpoint = "time-frames";
+    else if (category === "symbols") endpoint = "symbols";
+    else if (category === "breakeven") endpoint = "breakeven";
+    else if (category === "sessions") endpoint = "sessions";
+    else if (category === "marketTrends") endpoint = "market-trends";
+    else if (category === "marketTypes") endpoint = "market-types";
+    else if (category === "mistakes") endpoint = "mistakes";
+    else if (category === "rules") endpoint = "rules";
+    else if (category === "riskLimits") endpoint = "risk-limits";
+
+    if (endpoint) {
+      const payload = (category === "breakeven" || category === "sessions" || category === "riskLimits") 
+        ? { id: itemToDelete } 
+        : { name: itemToDelete };
+        
+      await fetch(`http://localhost:8000/api/settings/${endpoint}`, { 
+        method: "DELETE", headers, body: JSON.stringify(payload) 
+      });
+    }
+
     // Proceed with deletion
     handleDelete(category, itemToDelete);
     setDeletePrompt({ isOpen: false, category: null, itemToDelete: null, step: 1 });
+    showToast("Item deleted successfully!");
   };
 
   const cancelDelete = () => {
     setDeletePrompt({ isOpen: false, category: null, itemToDelete: null, step: 1 });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    const token = "1|6Jz5W4mBp114wk1fmxxjjg3bPNKHBrEsiHjnSEW2c20da63f";
+    const headers = { "Content-Type": "application/json", "Authorization": `Bearer ${token}` };
+
     if (activeCategory === "breakeven") {
       if (!bSymbol || !bValue.trim()) return;
       
+      const isDuplicate = data.breakeven.some(item => item.symbol === bSymbol && item.id !== formState.originalId);
+      if (isDuplicate) {
+        showToast(`Breakeven for ${bSymbol} already exists!`);
+        return;
+      }
+      
       if (formState.mode === "ADD") {
+        await fetch("http://localhost:8000/api/settings/symbols", { method: "POST", headers, body: JSON.stringify({ name: bSymbol, breakeven_value: bValue.trim() }) });
         setData((prev) => ({
           ...prev,
           breakeven: [...prev.breakeven, { id: Date.now().toString(), symbol: bSymbol, value: bValue.trim() }]
         }));
       } else {
+        await fetch("http://localhost:8000/api/settings/breakeven", { method: "PUT", headers, body: JSON.stringify({ id: formState.originalId, symbol: bSymbol, value: bValue.trim() }) });
         setData((prev) => ({
           ...prev,
           breakeven: prev.breakeven.map(item => 
@@ -187,12 +264,21 @@ export default function ManagePage() {
     } else if (activeCategory === "sessions") {
       if (!sName.trim() || !sStartTime || !sEndTime) return;
       
+      const isDuplicate = data.sessions.some(item => item.name.toLowerCase() === sName.trim().toLowerCase() && item.id !== formState.originalId);
+      if (isDuplicate) {
+        showToast(`Session ${sName.trim()} already exists!`);
+        return;
+      }
+      
       if (formState.mode === "ADD") {
+        const res = await fetch("http://localhost:8000/api/settings/sessions", { method: "POST", headers, body: JSON.stringify({ name: sName.trim(), start_time: sStartTime, end_time: sEndTime }) });
+        const resData = await res.json();
         setData((prev) => ({
           ...prev,
-          sessions: [...prev.sessions, { id: Date.now().toString(), name: sName.trim(), startTime: sStartTime, endTime: sEndTime }]
+          sessions: [...prev.sessions, { id: resData.id ? resData.id.toString() : Date.now().toString(), name: sName.trim(), startTime: sStartTime, endTime: sEndTime }]
         }));
       } else {
+        await fetch("http://localhost:8000/api/settings/sessions", { method: "PUT", headers, body: JSON.stringify({ id: formState.originalId, name: sName.trim(), start_time: sStartTime, end_time: sEndTime }) });
         setData((prev) => ({
           ...prev,
           sessions: prev.sessions.map(item => 
@@ -203,28 +289,70 @@ export default function ManagePage() {
     } else if (activeCategory === "riskLimits") {
       if (!rType.trim() || !rValue.trim()) return;
       
+      const isDuplicate = data.riskLimits.some(item => item.type.toLowerCase() === rType.trim().toLowerCase() && item.id !== formState.originalId);
+      if (isDuplicate) {
+        showToast(`Risk limit ${rType.trim()} already exists!`);
+        return;
+      }
+      
       if (formState.mode === "ADD") {
+        const res = await fetch("http://localhost:8000/api/settings/risk-limits", { method: "POST", headers, body: JSON.stringify({ type: rType.trim(), value: rValue.toString().trim() }) });
+        const resData = await res.json();
         setData((prev) => ({
           ...prev,
-          riskLimits: [...prev.riskLimits, { id: Date.now().toString(), type: rType.trim(), value: rValue.trim() }]
+          riskLimits: [...prev.riskLimits, { id: resData.id ? resData.id.toString() : Date.now().toString(), type: rType.trim(), value: rValue.toString().trim() }]
         }));
       } else {
+        await fetch("http://localhost:8000/api/settings/risk-limits", { method: "PUT", headers, body: JSON.stringify({ id: formState.originalId, type: rType.trim(), value: rValue.toString().trim() }) });
         setData((prev) => ({
           ...prev,
           riskLimits: prev.riskLimits.map(item => 
-            item.id === formState.originalId ? { ...item, type: rType.trim(), value: rValue.trim() } : item
+            item.id === formState.originalId ? { ...item, type: rType.trim(), value: rValue.toString().trim() } : item
           )
         }));
       }
     } else {
       if (!inputValue.trim()) return;
       
+      const normalizedInput = inputValue.trim().toLowerCase();
+      const isDuplicate = data[activeCategory].some(item => item.toLowerCase() === normalizedInput && item.toLowerCase() !== formState.originalId?.toLowerCase());
+      if (isDuplicate) {
+        showToast(`"${inputValue.trim()}" already exists!`);
+        return;
+      }
+      
       if (formState.mode === "ADD") {
+        let endpoint = "";
+        if (activeCategory === "setups") endpoint = "setups";
+        else if (activeCategory === "timeFrames") endpoint = "time-frames";
+        else if (activeCategory === "symbols") endpoint = "symbols";
+        else if (activeCategory === "marketTrends") endpoint = "market-trends";
+        else if (activeCategory === "marketTypes") endpoint = "market-types";
+        else if (activeCategory === "mistakes") endpoint = "mistakes";
+        else if (activeCategory === "rules") endpoint = "rules";
+
+        if (endpoint) {
+          await fetch(`http://localhost:8000/api/settings/${endpoint}`, { method: "POST", headers, body: JSON.stringify({ name: inputValue.trim() }) });
+        }
+
         setData((prev) => ({
           ...prev,
           [activeCategory]: [...prev[activeCategory], inputValue.trim()]
         }));
       } else {
+        let endpoint = "";
+        if (activeCategory === "setups") endpoint = "setups";
+        else if (activeCategory === "timeFrames") endpoint = "time-frames";
+        else if (activeCategory === "symbols") endpoint = "symbols";
+        else if (activeCategory === "marketTrends") endpoint = "market-trends";
+        else if (activeCategory === "marketTypes") endpoint = "market-types";
+        else if (activeCategory === "mistakes") endpoint = "mistakes";
+        else if (activeCategory === "rules") endpoint = "rules";
+
+        if (endpoint) {
+          await fetch(`http://localhost:8000/api/settings/${endpoint}`, { method: "PUT", headers, body: JSON.stringify({ old_name: formState.originalId, new_name: inputValue.trim() }) });
+        }
+
         setData((prev) => ({
           ...prev,
           [activeCategory]: prev[activeCategory].map(item => 
@@ -234,6 +362,7 @@ export default function ManagePage() {
       }
     }
     setFormState(null);
+    showToast(`${activeCatDetails?.title || 'Item'} saved successfully!`);
   };
 
   // If a category is selected, render the dedicated Sub-Screen
@@ -310,7 +439,7 @@ export default function ManagePage() {
                       <input 
                         type="time" 
                         className={styles.formInput} 
-                        value={sStartTime}
+                        value={sStartTime || ""}
                         onChange={(e) => setSStartTime(e.target.value)}
                       />
                     </div>
@@ -319,7 +448,7 @@ export default function ManagePage() {
                       <input 
                         type="time" 
                         className={styles.formInput} 
-                        value={sEndTime}
+                        value={sEndTime || ""}
                         onChange={(e) => setSEndTime(e.target.value)}
                       />
                     </div>
@@ -333,8 +462,8 @@ export default function ManagePage() {
                       type="text" 
                       className={styles.formInput} 
                       value={rType}
-                      disabled
-                      style={{ opacity: 0.7, cursor: "not-allowed" }}
+                      onChange={(e) => setRType(e.target.value)}
+                      placeholder="e.g. Daily SL"
                     />
                   </div>
                   <div className={styles.formGroup}>
@@ -377,6 +506,7 @@ export default function ManagePage() {
                   disabled={
                     activeCategory === "breakeven" ? (!bSymbol || !bValue.trim()) : 
                     activeCategory === "sessions" ? (!sName.trim() || !sStartTime || !sEndTime) : 
+                    activeCategory === "riskLimits" ? (!rType.trim() || !rValue.toString().trim()) : 
                     !inputValue.trim()
                   }
                 >
@@ -470,15 +600,20 @@ export default function ManagePage() {
                         <span className={styles.bLabel}>{item.type}</span>
                         <span className={styles.bValue} style={{ color: "var(--loss-red)" }}>₹ {item.value}</span>
                       </div>
-                      <div className={styles.deleteIconBtn} style={{ color: "var(--text-secondary)" }}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                      <button className={styles.deleteIconBtn} onClick={(e) => { e.stopPropagation(); requestDelete("riskLimits", item.id); }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--loss-red)" strokeWidth="2">
+                          <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                         </svg>
-                      </div>
+                      </button>
                     </div>
                   ))}
-                  {/* No Add button for Risk Limits, they are fixed */}
+                  <button className={styles.addBtn} onClick={openAddForm}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                    Add Risk Limit
+                  </button>
                 </>
               )}
             </div>
@@ -514,6 +649,17 @@ export default function ManagePage() {
             </div>
           </div>
         </div>
+        
+        {/* Toast Notification */}
+        {toast.show && (
+          <div className={styles.toast}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+            {toast.message}
+          </div>
+        )}
       </div>
     );
   }
@@ -590,6 +736,17 @@ export default function ManagePage() {
           </button>
         </div>
       </main>
+
+      {/* Toast Notification */}
+      {toast.show && (
+        <div className={styles.toast}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+          {toast.message}
+        </div>
+      )}
 
       <BottomNav />
     </div>

@@ -14,73 +14,7 @@ import {
   Cell,
 } from "recharts";
 
-/* ===== FIXED DUMMY DATA — Zerodha Style Daily P&L ===== */
-const rawData = [
-  // ===== JULY 2026 =====
-  { date:"2026-07-01", pnl:4250, netPnl:4098, charges:152, numTrades:3 },
-  // ===== JUNE 2026 =====
-  { date:"2026-06-30", pnl:2100, netPnl:1932, charges:168, numTrades:4 },
-  { date:"2026-06-27", pnl:13000, netPnl:12780, charges:220, numTrades:2 },
-  { date:"2026-06-26", pnl:-900, netPnl:-1068, charges:168, numTrades:3 },
-  { date:"2026-06-25", pnl:-700, netPnl:-885, charges:185, numTrades:4 },
-  { date:"2026-06-24", pnl:7900, netPnl:7702, charges:198, numTrades:2 },
-  { date:"2026-06-23", pnl:1600, netPnl:1425, charges:175, numTrades:3 },
-  { date:"2026-06-20", pnl:8100, netPnl:7890, charges:210, numTrades:2 },
-  { date:"2026-06-19", pnl:2400, netPnl:2215, charges:185, numTrades:3 },
-  { date:"2026-06-18", pnl:-3000, netPnl:-3195, charges:195, numTrades:5 },
-  { date:"2026-06-17", pnl:5900, netPnl:5720, charges:180, numTrades:2 },
-  { date:"2026-06-16", pnl:5200, netPnl:5008, charges:192, numTrades:3 },
-  { date:"2026-06-13", pnl:-1500, netPnl:-1672, charges:172, numTrades:4 },
-  { date:"2026-06-12", pnl:3400, netPnl:3235, charges:165, numTrades:2 },
-  { date:"2026-06-11", pnl:6200, netPnl:5990, charges:210, numTrades:3 },
-  { date:"2026-06-10", pnl:-2800, netPnl:-2985, charges:185, numTrades:5 },
-  { date:"2026-06-09", pnl:4100, netPnl:3928, charges:172, numTrades:2 },
-  { date:"2026-06-06", pnl:1800, netPnl:1638, charges:162, numTrades:3 },
-  { date:"2026-06-05", pnl:-4200, netPnl:-4398, charges:198, numTrades:6 },
-  { date:"2026-06-04", pnl:7500, netPnl:7285, charges:215, numTrades:2 },
-  { date:"2026-06-03", pnl:2200, netPnl:2038, charges:162, numTrades:3 },
-  { date:"2026-06-02", pnl:-1100, netPnl:-1275, charges:175, numTrades:4 },
-  // ===== MAY 2026 =====
-  { date:"2026-05-29", pnl:3400, netPnl:3228, charges:172, numTrades:2 },
-  { date:"2026-05-28", pnl:-3800, netPnl:-3992, charges:192, numTrades:4 },
-  { date:"2026-05-27", pnl:5500, netPnl:5298, charges:202, numTrades:2 },
-  { date:"2026-05-26", pnl:2800, netPnl:2635, charges:165, numTrades:3 },
-  { date:"2026-05-23", pnl:-2200, netPnl:-2388, charges:188, numTrades:5 },
-  { date:"2026-05-22", pnl:8200, netPnl:7978, charges:222, numTrades:1 },
-  { date:"2026-05-21", pnl:4100, netPnl:3918, charges:182, numTrades:2 },
-  { date:"2026-05-20", pnl:-900, netPnl:-1065, charges:165, numTrades:3 },
-  { date:"2026-05-19", pnl:3200, netPnl:3028, charges:172, numTrades:2 },
-  { date:"2026-05-16", pnl:-4200, netPnl:-4398, charges:198, numTrades:4 },
-  { date:"2026-05-15", pnl:2600, netPnl:2432, charges:168, numTrades:2 },
-  { date:"2026-05-14", pnl:1900, netPnl:1742, charges:158, numTrades:2 },
-  { date:"2026-05-13", pnl:7500, netPnl:7282, charges:218, numTrades:1 },
-  { date:"2026-05-12", pnl:-1500, netPnl:-1672, charges:172, numTrades:3 },
-  // ===== APRIL 2026 =====
-  { date:"2026-04-30", pnl:4600, netPnl:4408, charges:192, numTrades:2 },
-  { date:"2026-04-29", pnl:-2900, netPnl:-3085, charges:185, numTrades:4 },
-  { date:"2026-04-28", pnl:3100, netPnl:2928, charges:172, numTrades:2 },
-  { date:"2026-04-25", pnl:5900, netPnl:5698, charges:202, numTrades:1 },
-  { date:"2026-04-24", pnl:-6200, netPnl:-6412, charges:212, numTrades:5 },
-  { date:"2026-04-23", pnl:2400, netPnl:2235, charges:165, numTrades:2 },
-  { date:"2026-04-22", pnl:1700, netPnl:1542, charges:158, numTrades:2 },
-  // ===== MARCH 2026 =====
-  { date:"2026-03-31", pnl:3800, netPnl:3622, charges:178, numTrades:2 },
-  { date:"2026-03-27", pnl:6400, netPnl:6185, charges:215, numTrades:1 },
-  { date:"2026-03-26", pnl:-3500, netPnl:-3688, charges:188, numTrades:4 },
-  { date:"2026-03-25", pnl:2100, netPnl:1938, charges:162, numTrades:2 },
-  { date:"2026-03-24", pnl:4900, netPnl:4705, charges:195, numTrades:1 },
-  { date:"2026-03-21", pnl:-1800, netPnl:-1972, charges:172, numTrades:3 },
-  // ===== FEB 2026 =====
-  { date:"2026-02-27", pnl:5200, netPnl:4998, charges:202, numTrades:1 },
-  { date:"2026-02-26", pnl:-4100, netPnl:-4292, charges:192, numTrades:4 },
-  { date:"2026-02-25", pnl:3600, netPnl:3428, charges:172, numTrades:2 },
-  { date:"2026-02-24", pnl:1400, netPnl:1242, charges:158, numTrades:2 },
-  // ===== JAN 2026 =====
-  { date:"2026-01-30", pnl:7100, netPnl:6888, charges:212, numTrades:1 },
-  { date:"2026-01-29", pnl:-2600, netPnl:-2788, charges:188, numTrades:3 },
-  { date:"2026-01-28", pnl:4300, netPnl:4118, charges:182, numTrades:2 },
-  { date:"2026-01-27", pnl:2800, netPnl:2635, charges:165, numTrades:2 },
-].sort((a, b) => new Date(a.date) - new Date(b.date));
+import { fetchAndProcessTrades } from "../utils/tradeUtils";
 
 const PERIOD_TABS = [
   { label: "This Month", value: "1m" },
@@ -182,11 +116,33 @@ const MonthCalendar = ({ year, month, data }) => {
   );
 };
 
+import { useEffect } from "react";
 export default function PnlPage() {
   const [period, setPeriod] = useState("1m");
   const [customDates, setCustomDates] = useState({ start: "", end: "" });
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [tempDates, setTempDates] = useState({ start: "", end: "" });
+  const [rawData, setRawData] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      const trades = await fetchAndProcessTrades();
+      const grouped = {};
+      trades.forEach(t => {
+        if (!grouped[t.date]) {
+          grouped[t.date] = { date: t.date, pnl: 0, netPnl: 0, charges: 0, numTrades: 0 };
+        }
+        grouped[t.date].pnl += t.grossPnl || 0;
+        grouped[t.date].netPnl += t.netPnl || 0;
+        grouped[t.date].charges += t.charges || 0;
+        grouped[t.date].numTrades += 1;
+      });
+      setRawData(Object.values(grouped).sort((a,b) => new Date(a.date) - new Date(b.date)));
+      setIsLoading(false);
+    };
+    loadData();
+  }, []);
 
   const filtered = useMemo(() => {
     if (period === "custom") {
@@ -196,7 +152,7 @@ export default function PnlPage() {
       return res;
     }
     return filterByPeriod(rawData, period);
-  }, [period, customDates]);
+  }, [rawData, period, customDates]);
 
   const handleApplyAdvFilters = () => {
     setCustomDates(tempDates);
@@ -301,6 +257,10 @@ export default function PnlPage() {
       </header>
 
       <main className={styles.main}>
+        {isLoading ? (
+          <div style={{ textAlign: "center", padding: "40px", color: "var(--text-muted)" }}>Loading P&L data...</div>
+        ) : (
+          <>
         {/* Zerodha-Style 1-Line Summary Strip */}
         <div className={styles.zerodhaSummaryStrip}>
           <div className={styles.zSummaryItem}>
@@ -464,6 +424,7 @@ export default function PnlPage() {
             ))}
           </div>
         </div>
+        </>)}
       </main>
 
       {/* Advanced Filter Modal */}

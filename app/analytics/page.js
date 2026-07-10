@@ -20,8 +20,8 @@ const today = new Date();
 const currentYear = today.getFullYear();
 const currentMonth = String(today.getMonth() + 1).padStart(2, '0');
 
-// Extended Mock Data for Analytics
-import allTrades from "../data/trades.json";
+import { fetchAndProcessTrades, fetchSettings } from "../utils/tradeUtils";
+import { useEffect } from "react";
 
 const COLORS = ["#448aff", "#7c4dff", "#00e676", "#ffab40", "#ff5252", "#e040fb"];
 
@@ -40,6 +40,22 @@ const CustomBarTooltip = ({ active, payload, label, unit }) => {
 
 export default function AnalyticsPage() {
   const [dateRange, setDateRange] = useState("thisMonth");
+  const [allTrades, setAllTrades] = useState([]);
+  const [dbSettings, setDbSettings] = useState({ symbols: [], setups: [], sessions: [] });
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      const [data, settings] = await Promise.all([
+        fetchAndProcessTrades(),
+        fetchSettings()
+      ]);
+      setAllTrades(data);
+      setDbSettings(settings);
+      setIsLoading(false);
+    };
+    loadData();
+  }, []);
   
   // Custom Date States
   const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -80,7 +96,7 @@ export default function AnalyticsPage() {
 
     if (advFilters.symbol) result = result.filter(t => t.symbol === advFilters.symbol);
     if (advFilters.session) result = result.filter(t => t.session === advFilters.session);
-    if (advFilters.setup) result = result.filter(t => t.setups.includes(advFilters.setup));
+    if (advFilters.setup) result = result.filter(t => (Array.isArray(t.setup) ? t.setup : [t.setup]).includes(advFilters.setup));
 
     return result;
   }, [dateRange, customStart, customEnd, advFilters]);
@@ -89,12 +105,14 @@ export default function AnalyticsPage() {
   const setupData = useMemo(() => {
     const map = {};
     filteredTrades.forEach(t => {
-      t.setups.forEach(s => {
+      const setups = Array.isArray(t.setup) ? t.setup : [t.setup];
+      setups.forEach(s => {
+        if(!s) return;
         if (!map[s]) map[s] = { name: s, total: 0, wins: 0, pnl: 0, totalRR: 0 };
         map[s].total++;
         if (t.pnl > 0) map[s].wins++;
         map[s].pnl += t.pnl;
-        map[s].totalRR += t.rr;
+        map[s].totalRR += t.rr || 0;
       });
     });
     return Object.values(map).map(item => ({
@@ -184,7 +202,10 @@ export default function AnalyticsPage() {
       </header>
 
       <main className={styles.main}>
-        
+        {isLoading ? (
+          <div style={{ textAlign: "center", padding: "40px", color: "var(--text-muted)" }}>Loading analytics...</div>
+        ) : (
+          <>
         {/* Date Filter */}
         <div className={`${styles.card} glass-card`}>
           <div className={styles.filterRow}>
@@ -379,7 +400,7 @@ export default function AnalyticsPage() {
             {symbolData.length === 0 && <p className={styles.emptyText}>No symbol data.</p>}
           </div>
         </div>
-
+        </>)}
       </main>
 
       {/* Advanced Filter Modal */}
@@ -395,30 +416,21 @@ export default function AnalyticsPage() {
                 <label className={styles.advFilterLabel}>Symbol</label>
                 <select className={styles.advFilterSelect} value={advFilters.symbol} onChange={(e) => setAdvFilters(prev => ({...prev, symbol: e.target.value}))}>
                   <option value="">All Symbols</option>
-                  <option value="NIFTY">NIFTY</option>
-                  <option value="BANKNIFTY">BANKNIFTY</option>
-                  <option value="RELIANCE">RELIANCE</option>
-                  <option value="TCS">TCS</option>
+                  {dbSettings.symbols?.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
                 </select>
               </div>
               <div>
                 <label className={styles.advFilterLabel}>Session</label>
                 <select className={styles.advFilterSelect} value={advFilters.session} onChange={(e) => setAdvFilters(prev => ({...prev, session: e.target.value}))}>
                   <option value="">All Sessions</option>
-                  <option value="Morning (9:15 - 11:30)">Morning</option>
-                  <option value="Afternoon (11:30 - 13:30)">Afternoon</option>
-                  <option value="Late (13:30 - 15:30)">Late</option>
+                  {dbSettings.sessions?.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
                 </select>
               </div>
               <div>
                 <label className={styles.advFilterLabel}>Setup</label>
                 <select className={styles.advFilterSelect} value={advFilters.setup} onChange={(e) => setAdvFilters(prev => ({...prev, setup: e.target.value}))}>
                   <option value="">All Setups</option>
-                  <option value="Breakout">Breakout</option>
-                  <option value="Reversal">Reversal</option>
-                  <option value="Pullback">Pullback</option>
-                  <option value="Liquidity Grab">Liquidity Grab</option>
-                  <option value="FOMO Trade">FOMO Trade</option>
+                  {dbSettings.setups?.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
                 </select>
               </div>
             </div>

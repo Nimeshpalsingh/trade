@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import BottomNav from "../components/BottomNav";
 import styles from "./journal.module.css";
 import { useRouter } from "next/navigation";
@@ -9,10 +9,7 @@ const today = new Date();
 const currentYear = today.getFullYear();
 const currentMonth = String(today.getMonth() + 1).padStart(2, '0');
 
-import allTrades from "../data/trades.json";
-
-const AVAILABLE_SETUPS = ["Breakout", "Reversal", "Pullback", "Liquidity Grab", "FOMO Trade", "Moving Average Bounce"];
-const AVAILABLE_SESSIONS = ["Morning (9:15 - 11:30)", "Afternoon (11:30 - 13:30)", "Late (13:30 - 15:30)"];
+import { fetchAndProcessTrades, fetchSettings } from "../utils/tradeUtils";
 
 export default function JournalPage() {
   const router = useRouter();
@@ -53,6 +50,44 @@ export default function JournalPage() {
   // Advanced Filter Modal States
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [advFilters, setAdvFilters] = useState(initialAdvFilters);
+
+  const [allTrades, setAllTrades] = useState([]);
+  const [dbSettings, setDbSettings] = useState({ symbols: [], setups: [], sessions: [] });
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTrades = async () => {
+      try {
+        const [trades, settings] = await Promise.all([
+          fetchAndProcessTrades(),
+          fetchSettings()
+        ]);
+        setDbSettings(settings);
+        const formatted = trades.map(t => {
+          const hasExits = t.exits && t.exits.length > 0;
+          let status = 'Active';
+          if (hasExits) status = 'Completed';
+
+          return {
+            ...t,
+            id: t.id.toString(),
+            time: "00:00 AM",
+            timestamp: new Date(t.date).getTime(),
+            type: t.type === 'LONG' ? 'Buy' : 'Sell',
+            setups: Array.isArray(t.setup) ? t.setup : [t.setup].filter(Boolean),
+            status: status,
+            isBookmarked: false
+          };
+        });
+        setAllTrades(formatted);
+      } catch (err) {
+        console.error("Failed to load trades", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchTrades();
+  }, []);
 
   const filteredTrades = useMemo(() => {
     let result = allTrades;
@@ -299,7 +334,11 @@ export default function JournalPage() {
 
         {/* Trades List */}
         <div className={styles.tradesList}>
-          {filteredTrades.map((trade, index) => (
+          {isLoading ? (
+            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading trades...</div>
+          ) : filteredTrades.length === 0 ? (
+            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No trades found</div>
+          ) : filteredTrades.map((trade, index) => (
             <div 
               key={trade.id} 
               className={styles.tradeCard} 
@@ -390,10 +429,7 @@ export default function JournalPage() {
                   onChange={(e) => setAdvFilters({...advFilters, symbol: e.target.value})}
                 >
                   <option value="">All Symbols</option>
-                  <option value="NIFTY 50">NIFTY 50</option>
-                  <option value="BANKNIFTY">BANKNIFTY</option>
-                  <option value="RELIANCE">RELIANCE</option>
-                  <option value="TCS">TCS</option>
+                  {dbSettings.symbols?.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
                 </select>
               </div>
 
@@ -406,7 +442,7 @@ export default function JournalPage() {
                   onChange={(e) => setAdvFilters({...advFilters, session: e.target.value})}
                 >
                   <option value="">All Sessions</option>
-                  {AVAILABLE_SESSIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                  {dbSettings.sessions?.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
                 </select>
               </div>
 
@@ -414,7 +450,8 @@ export default function JournalPage() {
               <div className={styles.filterGroup}>
                 <label className={styles.filterLabel}>Setups / Strategies</label>
                 <div className={styles.setupGrid}>
-                  {AVAILABLE_SETUPS.map(s => {
+                  {dbSettings.setups?.map(setupObj => {
+                    const s = setupObj.name;
                     const isActive = advFilters.setups.includes(s);
                     return (
                       <button 

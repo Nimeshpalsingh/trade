@@ -3,59 +3,24 @@ import { useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import styles from "./tradeDetails.module.css";
 
-// Extended Mock Data capturing all fields from "Add Trade" wizard
-const allTrades = [
-  { 
-    id:"t1", date:"2025-05-28", time: "09:15", symbol:"NIFTY 50", type:"Buy", 
-    qty: 50, entry: 22550.25, exit: 22700.25, sl: 22450.00, target: 22850.00, 
-    partialExits: [{ qty: 25, price: 22650.00 }, { qty: 25, price: 22750.50 }],
-    lotSize: 1, pnl:12525.00, rr: 2.99, roi: 2.50, charges: 125,
-    mode: "Live", trend: "Up", session: "Morning (9:15 - 11:30)",
-    setups:["Breakout"], timeframe: "15m", 
-    biases: { "1 Month": "Up", "1 Week": "Up", "1 Day": "Up", "1 Hour": "Not Sure" },
-    strategyRules: ["Liquidity Taken", "BOS", "CHOCH"],
-    mistakes:["FOMO", "Overtrading", "RR Not Maintained"], 
-    notes: "Good breakout trade. Followed all rules. Booked 50% at 1R and rest at target. Volume was good. Market in trending condition.",
-    status: "Completed", isBookmarked: true,
-    images: [], // mock image URLs would go here
-    videoLink: "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-  },
-  { 
-    id:"t2", date:"2025-05-28", time: "10:45", symbol:"BANKNIFTY", type:"Sell", 
-    qty: 15, entry: 52400.00, exit: 52520.00, sl: 52300.00, target: 52000.00,
-    partialExits: [{ qty: 15, price: 52520.00 }],
-    lotSize: 1, pnl:-2150.00, rr: -1.0, roi: -0.5, charges: 80,
-    mode: "Live", trend: "Sideways", session: "Morning (9:15 - 11:30)",
-    setups:["Liquidity Grab"], timeframe: "5m", 
-    biases: { "1 Day": "Down", "15 Min": "Down" },
-    strategyRules: ["Inducement", "Fair Value Gap"],
-    mistakes:["FOMO", "Revenge Trading"], 
-    notes: "Got chopped out. Market was sideways.",
-    status: "Completed", isBookmarked: true,
-    images: []
-  },
-  { 
-    id:"t3", date:"2025-05-28", time: "11:30", symbol:"RELIANCE", type:"Buy", 
-    qty: 100, entry: 3120.00, exit: 3188.00, sl: 3100.00, target: 3200.00,
-    partialExits: [{ qty: 100, price: 3188.00 }],
-    lotSize: 1, pnl:6800.00, rr: 3.2, roi: 2.1, charges: 45,
-    mode: "Live", trend: "Up", session: "Afternoon (11:30 - 13:30)",
-    setups:["Reversal"], timeframe: "15m", 
-    biases: { "1 Week": "Up", "1 Day": "Up" },
-    strategyRules: ["BOS"],
-    mistakes:[], 
-    notes: "Perfect bounce from daily support.",
-    status: "Completed", isBookmarked: true,
-    images: []
-  }
-];
+import { fetchAndProcessTrades } from "../../utils/tradeUtils";
+import { useEffect } from "react";
 
 export default function TradeDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("Basic");
-  
-  const currentIndex = allTrades.findIndex(t => t.id === params.id);
+  const [allTrades, setAllTrades] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchAndProcessTrades().then(data => {
+      setAllTrades(data);
+      setIsLoading(false);
+    });
+  }, []);
+
+  const currentIndex = allTrades.findIndex(t => String(t.id) === String(params.id));
   const trade = allTrades[currentIndex];
 
   const prevTrade = currentIndex > 0 ? allTrades[currentIndex - 1] : null;
@@ -72,8 +37,12 @@ export default function TradeDetailsPage() {
     return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
   };
 
+  if (isLoading) {
+    return <div style={{color: "white", padding: "20px", textAlign: "center"}}>Loading trade details...</div>;
+  }
+
   if (!trade) {
-    return <div style={{color: "white", padding: "20px"}}>Trade not found</div>;
+    return <div style={{color: "white", padding: "20px", textAlign: "center"}}>Trade not found</div>;
   }
 
   const allMistakesList = ["FOMO", "Overtrading", "Revenge Trading", "RR Not Maintained", "Early Exit"];
@@ -103,8 +72,8 @@ export default function TradeDetailsPage() {
         <div className={styles.headerTitles}>
           <h1 className={styles.title}>{trade.symbol}</h1>
           <p className={styles.subtitle}>
-            <span className={trade.type === "Buy" ? styles.textGreen : styles.textRed}>{trade.type}</span> 
-            {" • "}{trade.date} • {trade.time}
+            <span className={trade.type === "LONG" ? styles.textGreen : styles.textRed}>{trade.type === "LONG" ? "Buy" : "Sell"}</span> 
+            {" • "}{trade.date}
           </p>
         </div>
         <div className={styles.headerActions}>
@@ -169,27 +138,31 @@ export default function TradeDetailsPage() {
             <div className={styles.kvList}>
               <div className={styles.kvRow}>
                 <span className={styles.kvLabel}>Entry Price</span>
-                <span className={styles.kvValue}>{trade.entry.toLocaleString("en-IN", {minimumFractionDigits: 2})}</span>
+                <span className={styles.kvValue}>{parseFloat(trade.entry_price || 0).toLocaleString("en-IN", {minimumFractionDigits: 2})}</span>
               </div>
               <div className={styles.kvRow}>
                 <span className={styles.kvLabel}>Avg. Exit Price</span>
-                <span className={styles.kvValue}>{trade.exit.toLocaleString("en-IN", {minimumFractionDigits: 2})}</span>
+                <span className={styles.kvValue}>{
+                  trade.exits && trade.exits.length > 0 
+                  ? (trade.exits.reduce((acc, ex) => acc + (parseFloat(ex.price) * parseFloat(ex.qty)), 0) / trade.exits.reduce((acc, ex) => acc + parseFloat(ex.qty), 0)).toLocaleString("en-IN", {minimumFractionDigits: 2})
+                  : "N/A"
+                }</span>
               </div>
               <div className={styles.kvRow}>
                 <span className={styles.kvLabel}>Stop Loss</span>
-                <span className={styles.kvValue}>{trade.sl.toLocaleString("en-IN", {minimumFractionDigits: 2})}</span>
+                <span className={styles.kvValue}>{parseFloat(trade.sl || 0).toLocaleString("en-IN", {minimumFractionDigits: 2})}</span>
               </div>
               <div className={styles.kvRow}>
                 <span className={styles.kvLabel}>Target Price</span>
-                <span className={styles.kvValue}>{trade.target.toLocaleString("en-IN", {minimumFractionDigits: 2})}</span>
+                <span className={styles.kvValue}>N/A</span>
               </div>
               <div className={styles.kvRow}>
                 <span className={styles.kvLabel}>Quantity</span>
-                <span className={styles.kvValue}>{trade.qty}</span>
+                <span className={styles.kvValue}>{parseFloat(trade.qty || 0)}</span>
               </div>
               <div className={styles.kvRow}>
                 <span className={styles.kvLabel}>Capital Used</span>
-                <span className={styles.kvValue}>₹ {(trade.entry * trade.qty * (trade.lotSize || 1)).toLocaleString("en-IN", {minimumFractionDigits: 2})}</span>
+                <span className={styles.kvValue}>₹ {(parseFloat(trade.entry_price || 0) * parseFloat(trade.qty || 0)).toLocaleString("en-IN", {minimumFractionDigits: 2})}</span>
               </div>
               <div className={styles.kvRow}>
                 <span className={styles.kvLabel}>Charges / Brokerage</span>
@@ -208,14 +181,14 @@ export default function TradeDetailsPage() {
             </div>
 
             {/* Partial Exits Section */}
-            {trade.partialExits && trade.partialExits.length > 0 && (
+            {trade.exits && trade.exits.length > 0 && (
               <div className={styles.sectionBlock}>
                 <h3 className={styles.sectionTitle}>Exits Breakdown</h3>
                 <div className={styles.exitsList}>
-                  {trade.partialExits.map((ex, idx) => (
+                  {trade.exits.map((ex, idx) => (
                     <div key={idx} className={styles.exitRow}>
                       <span className={styles.exitQty}>{ex.qty} Qty</span>
-                      <span className={styles.exitPrice}>@ ₹{ex.price.toLocaleString("en-IN", {minimumFractionDigits: 2})}</span>
+                      <span className={styles.exitPrice}>@ ₹{parseFloat(ex.price).toLocaleString("en-IN", {minimumFractionDigits: 2})}</span>
                     </div>
                   ))}
                 </div>
@@ -228,7 +201,7 @@ export default function TradeDetailsPage() {
           <div className={styles.overviewSection}>
             {/* Quick Context Tags */}
             <div className={styles.contextTags}>
-              {trade.setups && trade.setups.map(s => <span key={s} className={styles.contextTag}>Setup: {s}</span>)}
+              {trade.setup && <span className={styles.contextTag}>Setup: {trade.setup}</span>}
               <span className={styles.contextTag}>Trend: {trade.trend}</span>
               <span className={styles.contextTag}>Session: {trade.session}</span>
             </div>
@@ -237,16 +210,12 @@ export default function TradeDetailsPage() {
             <div className={styles.sectionBlock}>
               <h3 className={styles.sectionTitle}>Strategy Rules Followed</h3>
               <div className={styles.mistakesGrid}>
-                {allRulesList.map(r => {
-                  const isActive = trade.strategyRules.includes(r);
-                  if(!isActive) return null; // Only show rules that were actually followed
-                  return (
-                    <div key={r} className={`${styles.ruleChip}`}>
-                      ✅ {r}
-                    </div>
-                  );
-                })}
-                {trade.strategyRules.length === 0 && (
+                {trade.rules && trade.rules.map(r => (
+                  <div key={r} className={`${styles.ruleChip}`}>
+                    ✅ {r}
+                  </div>
+                ))}
+                {(!trade.rules || trade.rules.length === 0) && (
                   <span style={{color: "var(--text-muted)", fontSize: "13px"}}>No specific rules marked.</span>
                 )}
               </div>
@@ -257,15 +226,15 @@ export default function TradeDetailsPage() {
         {activeTab === "Bias" && (
           <div className={styles.overviewSection}>
             {/* Bias Section */}
-            {trade.biases && Object.keys(trade.biases).length > 0 ? (
+            {trade.biases && trade.biases.length > 0 ? (
               <div className={styles.sectionBlock}>
                 <h3 className={styles.sectionTitle}>Multi-Timeframe Bias</h3>
                 <div className={styles.biasGridDisplay}>
-                  {Object.entries(trade.biases).map(([tf, bias]) => (
-                    <div key={tf} className={styles.biasDisplayRow}>
-                      <span className={styles.biasDisplayTf}>{tf}</span>
-                      <span className={`${styles.biasDisplayVal} ${bias === 'Up' ? styles.textGreen : bias === 'Down' ? styles.textRed : ""}`}>
-                        {bias}
+                  {trade.biases.map((b, i) => (
+                    <div key={i} className={styles.biasDisplayRow}>
+                      <span className={styles.biasDisplayTf}>{b.timeFrame?.name || "Timeframe"}</span>
+                      <span className={`${styles.biasDisplayVal} ${b.trend?.name === 'Up' || b.trend?.name === 'Bullish' ? styles.textGreen : (b.trend?.name === 'Down' || b.trend?.name === 'Bearish' ? styles.textRed : "")}`}>
+                        {b.trend?.name || "Trend"}
                       </span>
                     </div>
                   ))}
@@ -285,16 +254,12 @@ export default function TradeDetailsPage() {
             <div className={styles.sectionBlock}>
               <h3 className={styles.sectionTitle}>Mistakes</h3>
               <div className={styles.mistakesGrid}>
-                {allMistakesList.map(m => {
-                  const isActive = trade.mistakes.includes(m);
-                  if(!isActive) return null; // Only show active mistakes
-                  return (
-                    <div key={m} className={`${styles.mistakeChip} ${styles.mistakeActive}`}>
-                      ⚠️ {m}
-                    </div>
-                  );
-                })}
-                {trade.mistakes.length === 0 && (
+                {trade.mistakes && trade.mistakes.map(m => (
+                  <div key={m} className={`${styles.mistakeChip} ${styles.mistakeActive}`}>
+                    ⚠️ {m}
+                  </div>
+                ))}
+                {(!trade.mistakes || trade.mistakes.length === 0) && (
                   <span style={{color: "var(--text-muted)", fontSize: "13px"}}>No mistakes recorded! Great job.</span>
                 )}
               </div>

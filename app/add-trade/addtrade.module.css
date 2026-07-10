@@ -89,6 +89,19 @@
   box-shadow: 0 0 0 3px rgba(68, 138, 255, 0.1);
 }
 
+.inputError {
+  border-color: var(--loss-red) !important;
+  background: rgba(255, 82, 82, 0.05) !important;
+}
+
+.errorText {
+  color: var(--loss-red);
+  font-size: 11px;
+  font-weight: 500;
+  margin-top: 4px;
+  animation: fadeInUp 0.2s ease;
+}
+
 .input::placeholder {
   color: var(--text-muted);
 }
