@@ -6,6 +6,7 @@ import styles from "./calculator.module.css";
 
 export default function CryptoCalculator() {
   const [tradeType, setTradeType] = useState("Buy");
+  const [market, setMarket] = useState("Crypto");
   const [entryPrice, setEntryPrice] = useState("");
   const [stopLoss, setStopLoss] = useState("");
   const [slPoints, setSlPoints] = useState("");
@@ -72,7 +73,7 @@ export default function CryptoCalculator() {
     const entry = parseFloat(entryPrice);
     const sl = parseFloat(stopLoss);
     const risk = parseFloat(riskInr);
-    const rate = parseFloat(usdInr);
+    const rate = market === "Crypto" ? parseFloat(usdInr) : 1;
     const rr = parseFloat(rewardRatio);
     const fee = parseFloat(tradingFee) || 0;
 
@@ -92,29 +93,34 @@ export default function CryptoCalculator() {
     }
 
     const slDistance = Math.abs(entry - sl);
-    const riskUsdt = risk / rate;
-    const quantity = riskUsdt / slDistance;
+    const riskBase = risk / rate;
+    
+    let quantity = riskBase / slDistance;
+    if (market === "Indian") {
+       quantity = Math.floor(quantity); // Whole quantity for stocks
+    }
+    
     const tpDistance = slDistance * rr;
     const takeProfit = tradeType === "Buy" ? entry + tpDistance : entry - tpDistance;
     
-    const profitUsdt = riskUsdt * rr;
-    const profitInr = profitUsdt * rate;
+    const profitBase = riskBase * rr;
+    const profitInr = profitBase * rate;
 
     // Optional fee calculation (simple approximation on entry position)
-    const positionSizeUsdt = quantity * entry;
-    const estimatedFeeUsdt = positionSizeUsdt * (fee / 100);
-    const totalRiskUsdt = riskUsdt + estimatedFeeUsdt;
+    const positionSizeBase = quantity * entry;
+    const estimatedFeeBase = positionSizeBase * (fee / 100);
+    const totalRiskBase = riskBase + estimatedFeeBase;
 
     return {
       slDistance: slDistance.toFixed(4),
-      riskUsdt: riskUsdt.toFixed(3),
-      quantity: quantity.toFixed(3),
-      takeProfit: takeProfit.toFixed(4),
+      riskBase: riskBase.toFixed(market === "Crypto" ? 3 : 2),
+      quantity: market === "Crypto" ? quantity.toFixed(3) : quantity.toString(),
+      takeProfit: takeProfit.toFixed(2),
       expectedLossInr: risk.toFixed(2),
       expectedProfitInr: profitInr.toFixed(2),
-      totalRiskUsdt: totalRiskUsdt.toFixed(3),
+      totalRiskBase: totalRiskBase.toFixed(market === "Crypto" ? 3 : 2),
     };
-  }, [tradeType, entryPrice, stopLoss, riskInr, usdInr, rewardRatio, tradingFee]);
+  }, [tradeType, entryPrice, stopLoss, riskInr, usdInr, rewardRatio, tradingFee, market]);
 
   const handleCopy = () => {
     if (!results || results.error) return;
@@ -159,12 +165,29 @@ Risk: ₹${riskInr} ($${results.riskUsdt})
             </svg>
             Position Size Calculator
           </h1>
-          <p className={styles.subtitle}>Calculate risk-adjusted quantity for crypto futures (Delta Exchange)</p>
+          <p className={styles.subtitle}>Calculate risk-adjusted quantity for any market</p>
         </div>
 
         <div className={styles.grid}>
           {/* Inputs Section */}
           <div className={styles.card}>
+            <div className={styles.tradeTypeToggle} style={{ marginBottom: '15px' }}>
+              <button 
+                className={`${styles.toggleBtn} ${market === "Crypto" ? styles.activeBuy : ""}`}
+                onClick={() => setMarket("Crypto")}
+                style={{ borderRadius: '8px' }}
+              >
+                Crypto (USD)
+              </button>
+              <button 
+                className={`${styles.toggleBtn} ${market === "Indian" ? styles.activeSell : ""}`}
+                onClick={() => setMarket("Indian")}
+                style={{ borderRadius: '8px' }}
+              >
+                Indian Market (₹)
+              </button>
+            </div>
+            
             <div className={styles.tradeTypeToggle}>
               <button 
                 className={`${styles.toggleBtn} ${tradeType === "Buy" ? styles.activeBuy : ""}`}
@@ -229,7 +252,7 @@ Risk: ₹${riskInr} ($${results.riskUsdt})
                 </div>
 
               <div className={styles.inputGroup}>
-                <label className={styles.inputLabel}>Risk Amount (INR)</label>
+                <label className={styles.inputLabel}>Risk Amount (₹)</label>
                 <div className={styles.inputWrapper}>
                   <span className={styles.inputPrefix}>₹</span>
                   <input 
@@ -237,23 +260,25 @@ Risk: ₹${riskInr} ($${results.riskUsdt})
                     className={`${styles.input} ${styles.hasPrefix}`} 
                     value={riskInr}
                     onChange={(e) => setRiskInr(e.target.value)}
-                    placeholder="e.g. 50"
+                    placeholder="e.g. 1000"
                   />
                 </div>
               </div>
 
-              <div className={styles.inputGroup}>
-                <label className={styles.inputLabel}>USD/INR Rate</label>
-                <div className={styles.inputWrapper}>
-                  <span className={styles.inputPrefix}>₹</span>
-                  <input 
-                    type="number" 
-                    className={`${styles.input} ${styles.hasPrefix}`} 
-                    value={usdInr}
-                    onChange={(e) => setUsdInr(e.target.value)}
-                  />
+              {market === "Crypto" && (
+                <div className={styles.inputGroup}>
+                  <label className={styles.inputLabel}>USD/INR Rate</label>
+                  <div className={styles.inputWrapper}>
+                    <span className={styles.inputPrefix}>₹</span>
+                    <input 
+                      type="number" 
+                      className={`${styles.input} ${styles.hasPrefix}`} 
+                      value={usdInr}
+                      onChange={(e) => setUsdInr(e.target.value)}
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className={styles.inputGroup}>
                 <label className={styles.inputLabel}>Reward Ratio (1:X)</label>
@@ -346,13 +371,15 @@ Risk: ₹${riskInr} ($${results.riskUsdt})
 
                 <div className={styles.resultItem}>
                   <span className={styles.resultLabel}>Take Profit Price</span>
-                  <span className={`${styles.resultValue} ${styles.textProfit}`}>${results.takeProfit}</span>
+                  <span className={`${styles.resultValue} ${styles.textProfit}`}>{market === "Crypto" ? "$" : "₹"}{results.takeProfit}</span>
                 </div>
 
-                <div className={styles.resultItem}>
-                  <span className={styles.resultLabel}>Risk (USDT)</span>
-                  <span className={styles.resultValue}>${results.riskUsdt}</span>
-                </div>
+                {market === "Crypto" && (
+                  <div className={styles.resultItem}>
+                    <span className={styles.resultLabel}>Risk (USDT)</span>
+                    <span className={styles.resultValue}>${results.riskBase}</span>
+                  </div>
+                )}
 
                 <div className={styles.resultItem}>
                   <span className={styles.resultLabel}>Expected Profit</span>
