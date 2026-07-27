@@ -29,10 +29,10 @@
   --accent-yellow-bg: rgba(255, 215, 64, 0.1);
 
   /* === Text Colors === */
-  --text-primary: #f0f0f5;
-  --text-secondary: #8a8b9e;
-  --text-muted: #5a5b70;
-  --text-accent: #b0b1c8;
+  --text-primary: #ffffff;
+  --text-secondary: #a1a1aa;
+  --text-muted: #94a3b8;
+  --text-accent: #c7d2fe;
 
   /* === Border Colors === */
   --border-subtle: rgba(255, 255, 255, 0.06);
@@ -83,6 +83,7 @@ html {
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  color-scheme: dark;
 }
 
 body {

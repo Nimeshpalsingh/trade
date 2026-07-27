@@ -61,7 +61,7 @@ function calculateStats(trades) {
   });
 
   const dayEntries = Object.entries(byDate).sort((a, b) => new Date(a[0]) - new Date(b[0]));
-  let bestDay = -Infinity, worstDay = Infinity, bestDayDate = "", worstDayDate = "";
+  let bestDay = 0, worstDay = 0, bestDayDate = "-", worstDayDate = "-";
   dayEntries.forEach(([date, pnl]) => {
     if (pnl > bestDay) { bestDay = pnl; bestDayDate = date; }
     if (pnl < worstDay) { worstDay = pnl; worstDayDate = date; }
@@ -104,23 +104,15 @@ function calculateStats(trades) {
 
 /* ===== Winning Streak Calculator ===== */
 function calculateStreak(trades) {
-  // Group by date, get daily PnL, sort latest first
-  const byDate = {};
-  trades.forEach((t) => {
-    if (!byDate[t.date]) byDate[t.date] = 0;
-    byDate[t.date] += t.pnl;
-  });
-  const days = Object.entries(byDate)
-    .sort((a, b) => new Date(b[0]) - new Date(a[0]))
-    .map(([date, pnl]) => ({ date, pnl }));
+  if (trades.length === 0) return { current: 0, type: "win", longest: 0 };
 
-  if (days.length === 0) return { current: 0, type: "win", longest: 0 };
+  const sortedTrades = [...trades].sort((a, b) => new Date(b.created_at || b.date) - new Date(a.created_at || a.date));
 
-  // Current streak from most recent day
-  const firstType = days[0].pnl >= 0 ? "win" : "loss";
+  // Current streak from most recent trade
+  const firstType = sortedTrades[0].pnl >= 0 ? "win" : "loss";
   let current = 0;
-  for (let i = 0; i < days.length; i++) {
-    const isWin = days[i].pnl >= 0;
+  for (let i = 0; i < sortedTrades.length; i++) {
+    const isWin = sortedTrades[i].pnl >= 0;
     if ((firstType === "win" && isWin) || (firstType === "loss" && !isWin)) {
       current++;
     } else break;
@@ -128,46 +120,65 @@ function calculateStreak(trades) {
 
   // Longest win streak
   let longest = 0, temp = 0;
-  for (const d of [...days].reverse()) {
-    if (d.pnl >= 0) { temp++; longest = Math.max(longest, temp); }
+  for (let i = sortedTrades.length - 1; i >= 0; i--) {
+    if (sortedTrades[i].pnl >= 0) { temp++; longest = Math.max(longest, temp); }
     else temp = 0;
   }
 
   return { current, type: firstType, longest };
 }
 
-/* ===== SL Breach Calculator ===== */
+/* ===== Real SL Adherence Calculator ===== */
 function calculateSLStats(trades) {
-  // Group by date
-  const byDate = {};
-  trades.forEach((t) => {
-    if (!byDate[t.date]) byDate[t.date] = 0;
-    byDate[t.date] += t.pnl;
+  if (trades.length === 0) return { avgRisk: 0, maxRisk: 0, slBreaches: 0, totalLosingTrades: 0, adherencePercent: 100, worstLoss: 0, bySymbol: [] };
+
+  let slBreaches = 0;
+  let totalLosingTrades = 0;
+  let totalRisk = 0;
+  let maxRisk = 0;
+  let worstLoss = 0;
+  const symData = {};
+
+  trades.forEach(t => {
+    // Planned Risk: (Entry - SL) * Qty
+    const plannedRisk = Math.abs(parseFloat(t.entry_price || 0) - parseFloat(t.sl || 0)) * parseFloat(t.qty || 0);
+    totalRisk += plannedRisk;
+    if (plannedRisk > maxRisk) maxRisk = plannedRisk;
+
+    const sym = t.symbol || "Unknown";
+    if (!symData[sym]) symData[sym] = { name: sym, totalRisk: 0, tradeCount: 0, slBreaches: 0 };
+    symData[sym].totalRisk += plannedRisk;
+    symData[sym].tradeCount++;
+
+    if (t.pnl < 0) {
+      totalLosingTrades++;
+      const actualLoss = Math.abs(t.pnl);
+      if (actualLoss > worstLoss) worstLoss = actualLoss;
+
+      // Buffer of 5% for slippage/charges. If actual loss > planned risk * 1.05, it's a breach.
+      if (actualLoss > plannedRisk * 1.05) {
+        slBreaches++;
+        symData[sym].slBreaches++;
+      }
+    }
   });
 
-  const dailyPnls = Object.entries(byDate).map(([date, pnl]) => ({ date, pnl }));
-  const lossDays = dailyPnls.filter((d) => d.pnl < 0);
+  const avgRisk = totalRisk / trades.length;
+  const adherencePercent = totalLosingTrades > 0 ? ((totalLosingTrades - slBreaches) / totalLosingTrades) * 100 : 100;
 
-  // Worst daily loss
-  const worstDailyLoss = lossDays.length > 0
-    ? Math.min(...lossDays.map((d) => d.pnl))
-    : 0;
-
-  // Daily SL breaches
-  const dailyBreaches = lossDays.filter((d) => Math.abs(d.pnl) > SL_LIMITS.dailySL).length;
-
-  // Monthly total loss (sum of all losing days only)
-  const monthlyTotalLoss = lossDays.reduce((s, d) => s + Math.abs(d.pnl), 0);
-  const monthlyBreached = monthlyTotalLoss > SL_LIMITS.monthlySL;
+  const bySymbol = Object.values(symData).map(s => {
+    s.avgRisk = s.tradeCount > 0 ? s.totalRisk / s.tradeCount : 0;
+    return s;
+  });
 
   return {
-    dailySLLimit: SL_LIMITS.dailySL,
-    monthlySLLimit: SL_LIMITS.monthlySL,
-    worstDailyLoss: Math.abs(worstDailyLoss),
-    dailyBreaches,
-    totalLossDays: lossDays.length,
-    monthlyTotalLoss,
-    monthlyBreached,
+    avgRisk: +avgRisk.toFixed(2),
+    maxRisk: +maxRisk.toFixed(2),
+    slBreaches,
+    totalLosingTrades,
+    adherencePercent: +adherencePercent.toFixed(1),
+    worstLoss: +worstLoss.toFixed(2),
+    bySymbol
   };
 }
 
@@ -225,8 +236,6 @@ export default function Dashboard() {
   };
 
   const sortedMistakes = Object.entries(stats.mistakes).sort((a, b) => b[1] - a[1]);
-  const dailySLPercent = Math.min((slStats.worstDailyLoss / slStats.dailySLLimit) * 100, 100);
-  const monthlySLPercent = Math.min((slStats.monthlyTotalLoss / slStats.monthlySLLimit) * 100, 100);
 
   const currentMonthName = new Date().toLocaleString("en-US", { month: "long" });
   const pnlTitle = period === "1m" ? `${currentMonthName.toUpperCase()} PNL` : `${currentLabel?.toUpperCase()} PNL`;
@@ -414,7 +423,7 @@ export default function Dashboard() {
                 {streak.type === "win" ? "🔥" : "❄️"}
               </span>
               <span className={styles.streakTypeLabel}>
-                {streak.type === "win" ? "Winning Days" : "Losing Days"}
+                {streak.type === "win" ? "Winning Trades" : "Losing Trades"}
               </span>
             </div>
             <div className={styles.streakMeta}>
@@ -447,23 +456,22 @@ export default function Dashboard() {
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--loss-red)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
               </svg>
-              Risk Management
+              Stop Loss Adherence
             </h3>
             <span className={styles.slBadge}>{currentLabel}</span>
           </div>
 
-          {/* Daily SL */}
           <div className={styles.slCard}>
             <div className={styles.slCardHeader}>
-              <span className={styles.slCardTitle}>Per Day SL Limit</span>
-              <span className={`${styles.slCardStatus} ${slStats.worstDailyLoss > slStats.dailySLLimit ? styles.slBreached : styles.slSafe}`}>
-                {slStats.worstDailyLoss > slStats.dailySLLimit ? "⚠️ BREACHED" : "✅ SAFE"}
+              <span className={styles.slCardTitle}>Risk Discipline (Slippage Adjusted)</span>
+              <span className={`${styles.slCardStatus} ${slStats.slBreaches > 0 ? styles.slBreached : styles.slSafe}`}>
+                {slStats.slBreaches > 0 ? "⚠️ NEEDS WORK" : "✅ DISCIPLINED"}
               </span>
             </div>
             <div className={styles.slRow}>
               <div className={styles.slStat}>
-                <span className={styles.slStatLabel}>Set Limit</span>
-                <span className={`${styles.slStatValue} mono`}>₹{slStats.dailySLLimit.toLocaleString("en-IN")}</span>
+                <span className={styles.slStatLabel}>Average Risk / Trade</span>
+                <span className={`${styles.slStatValue} mono`}>₹{slStats.avgRisk.toLocaleString("en-IN")}</span>
               </div>
               <div className={styles.slStatArrow}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -472,9 +480,9 @@ export default function Dashboard() {
                 </svg>
               </div>
               <div className={styles.slStat}>
-                <span className={styles.slStatLabel}>Worst Day Loss</span>
-                <span className={`${styles.slStatValue} mono`} style={{ color: slStats.worstDailyLoss > slStats.dailySLLimit ? "var(--loss-red)" : "var(--profit-green)" }}>
-                  ₹{slStats.worstDailyLoss.toLocaleString("en-IN")}
+                <span className={styles.slStatLabel}>Worst Trade Loss</span>
+                <span className={`${styles.slStatValue} mono`} style={{ color: slStats.worstLoss > 0 ? "var(--loss-red)" : "var(--text-muted)" }}>
+                  ₹{slStats.worstLoss.toLocaleString("en-IN")}
                 </span>
               </div>
             </div>
@@ -482,53 +490,48 @@ export default function Dashboard() {
               <div
                 className={styles.slBarFill}
                 style={{
-                  width: `${dailySLPercent}%`,
-                  background: dailySLPercent >= 100 ? "var(--loss-red)" : dailySLPercent >= 70 ? "var(--accent-orange)" : "var(--profit-green)",
+                  width: `${slStats.adherencePercent}%`,
+                  background: slStats.adherencePercent >= 80 ? "var(--profit-green)" : slStats.adherencePercent >= 50 ? "var(--accent-orange)" : "var(--loss-red)",
                 }}
               />
             </div>
             <div className={styles.slBreachInfo}>
-              <span>Breached <strong className="mono" style={{ color: slStats.dailyBreaches > 0 ? "var(--loss-red)" : "var(--profit-green)" }}>{slStats.dailyBreaches}</strong> out of {slStats.totalLossDays} loss days</span>
+              <span>
+                Maintained Stop Loss on <strong className="mono" style={{ color: slStats.adherencePercent >= 80 ? "var(--profit-green)" : "var(--loss-red)" }}>{slStats.adherencePercent}%</strong> of losing trades 
+                (Breached {slStats.slBreaches} out of {slStats.totalLosingTrades})
+              </span>
             </div>
           </div>
 
-          {/* Monthly SL */}
           <div className={styles.slCard}>
             <div className={styles.slCardHeader}>
-              <span className={styles.slCardTitle}>Monthly SL Limit</span>
-              <span className={`${styles.slCardStatus} ${slStats.monthlyBreached ? styles.slBreached : styles.slSafe}`}>
-                {slStats.monthlyBreached ? "🚨 EXCEEDED" : "✅ WITHIN LIMIT"}
+              <span className={styles.slCardTitle}>Symbol Risk Breakdown</span>
+              <span className={styles.slCardStatus} style={{background: 'rgba(124, 77, 255, 0.1)', color: 'var(--accent-purple)', border: '1px solid rgba(124, 77, 255, 0.2)'}}>
+                {slStats.bySymbol?.length || 0} SYMBOLS
               </span>
             </div>
-            <div className={styles.slRow}>
-              <div className={styles.slStat}>
-                <span className={styles.slStatLabel}>Set Limit</span>
-                <span className={`${styles.slStatValue} mono`}>₹{slStats.monthlySLLimit.toLocaleString("en-IN")}</span>
-              </div>
-              <div className={styles.slStatArrow}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                  <polyline points="12 5 19 12 12 19" />
-                </svg>
-              </div>
-              <div className={styles.slStat}>
-                <span className={styles.slStatLabel}>Total Monthly Loss</span>
-                <span className={`${styles.slStatValue} mono`} style={{ color: slStats.monthlyBreached ? "var(--loss-red)" : "var(--profit-green)" }}>
-                  ₹{slStats.monthlyTotalLoss.toLocaleString("en-IN")}
-                </span>
-              </div>
-            </div>
-            <div className={styles.slBar}>
-              <div
-                className={styles.slBarFill}
-                style={{
-                  width: `${monthlySLPercent}%`,
-                  background: monthlySLPercent >= 100 ? "var(--loss-red)" : monthlySLPercent >= 70 ? "var(--accent-orange)" : "var(--profit-green)",
-                }}
-              />
-            </div>
-            <div className={styles.slBreachInfo}>
-              <span>{monthlySLPercent.toFixed(0)}% of monthly limit used</span>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {slStats.bySymbol?.map((sym, i) => (
+                <div key={i} style={{ padding: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '13px', fontWeight: '600', color: '#fff' }}>{sym.name}</span>
+                    <span style={{ fontSize: '10px', color: sym.slBreaches > 0 ? 'var(--loss-red)' : 'var(--profit-green)', fontWeight: '700', padding: '2px 8px', borderRadius: '10px', background: sym.slBreaches > 0 ? 'var(--loss-red-bg)' : 'var(--profit-green-bg)' }}>
+                      {sym.slBreaches > 0 ? `⚠️ ${sym.slBreaches} SL HITS` : "✅ 0 SL HITS"}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '2px' }}>Avg Risk / Trade</div>
+                      <div style={{ fontSize: '14px', fontWeight: '600' }} className="mono">₹{sym.avgRisk.toLocaleString("en-IN", {maximumFractionDigits: 0})}</div>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '2px' }}>Period Risk Taken</div>
+                      <div style={{ fontSize: '14px', fontWeight: '600' }} className="mono">₹{sym.totalRisk.toLocaleString("en-IN", {maximumFractionDigits: 0})}</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>

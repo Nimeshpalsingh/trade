@@ -46,16 +46,18 @@ const ZerodhaTooltip = ({ active, payload, label }) => {
         {new Date(d.date).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
       </div>
       <div className={styles.zTooltipGrid}>
-        <span className={styles.zTooltipLabel}>P&L</span>
-        <span className={`${styles.zTooltipVal} mono`} style={{ color: d.netPnl >= 0 ? "#00e676" : "#ff5252" }}>
-          {d.netPnl >= 0 ? "+" : ""}₹{Math.abs(d.netPnl).toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+        <span className={styles.zTooltipLabel}>Gross P&L</span>
+        <span className={`${styles.zTooltipVal} mono`} style={{ color: d.netPnl + d.charges >= 0 ? "#00e676" : "#ff5252" }}>
+          {d.netPnl + d.charges >= 0 ? "+" : ""}₹{Math.abs(d.netPnl + d.charges).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </span>
         <span className={styles.zTooltipLabel}>Charges</span>
         <span className={`${styles.zTooltipVal} mono`} style={{ color: "#ff5252" }}>
-          -₹{d.charges.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+          -₹{d.charges.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </span>
-        <span className={styles.zTooltipLabel}>Trades</span>
-        <span className={`${styles.zTooltipVal} mono`}>{d.numTrades}</span>
+        <span className={styles.zTooltipLabel}>Net P&L</span>
+        <span className={`${styles.zTooltipVal} mono`} style={{ color: d.netPnl >= 0 ? "#00e676" : "#ff5252" }}>
+          {d.netPnl >= 0 ? "+" : ""}₹{Math.abs(d.netPnl).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </span>
       </div>
     </div>
   );
@@ -181,14 +183,16 @@ export default function PnlPage() {
   const profitDays = filtered.filter((d) => d.netPnl > 0).length;
   const lossDays = filtered.filter((d) => d.netPnl < 0).length;
   const totalTrades = filtered.reduce((s, d) => s + d.numTrades, 0);
-  const maxProfit = filtered.length > 0 ? Math.max(...filtered.map((d) => d.netPnl)) : 0;
-  const maxLoss = filtered.length > 0 ? Math.min(...filtered.map((d) => d.netPnl)) : 0;
+  let maxProfit = filtered.length > 0 ? Math.max(...filtered.map((d) => d.netPnl)) : 0;
+  let maxLoss = filtered.length > 0 ? Math.min(...filtered.map((d) => d.netPnl)) : 0;
+  if (maxProfit < 0) maxProfit = 0;
+  if (maxLoss > 0) maxLoss = 0;
 
   // Advanced Stats (Win Rate & Risk Reward)
   const winRate = profitDays + lossDays > 0 ? ((profitDays / (profitDays + lossDays)) * 100).toFixed(1) : 0;
   const avgWin = profitDays > 0 ? filtered.filter(d => d.netPnl > 0).reduce((s,d) => s + d.netPnl, 0) / profitDays : 0;
   const avgLoss = lossDays > 0 ? filtered.filter(d => d.netPnl < 0).reduce((s,d) => s + d.netPnl, 0) / lossDays : 0;
-  const avgRR = avgLoss !== 0 ? Math.abs(avgWin / avgLoss).toFixed(2) : (avgWin > 0 ? "Infinite" : 0);
+  const avgRR = avgLoss !== 0 ? Math.abs(avgWin / avgLoss).toFixed(2) : (avgWin > 0 ? "∞" : "0");
 
   // Group by month for Calendar
   const monthsData = useMemo(() => {
@@ -264,9 +268,9 @@ export default function PnlPage() {
         {/* Zerodha-Style 1-Line Summary Strip */}
         <div className={styles.zerodhaSummaryStrip}>
           <div className={styles.zSummaryItem}>
-            <span className={styles.zSummaryLabel}>Realized P&L</span>
+            <span className={styles.zSummaryLabel}>Gross P&L</span>
             <span className={`${styles.zSummaryValue} mono ${totalPnl + totalCharges >= 0 ? "text-profit" : "text-loss"}`}>
-              {totalPnl + totalCharges >= 0 ? "+" : ""}₹{Math.abs(totalPnl + totalCharges).toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+              {totalPnl + totalCharges >= 0 ? "+" : ""}₹{Math.abs(totalPnl + totalCharges).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
           </div>
           
@@ -275,7 +279,7 @@ export default function PnlPage() {
           <div className={styles.zSummaryItem}>
             <span className={styles.zSummaryLabel}>Charges & Taxes</span>
             <span className={`${styles.zSummaryValue} mono`} style={{ color: "#ff5252" }}>
-              ₹{totalCharges.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+              ₹{totalCharges.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
           </div>
           
@@ -284,7 +288,7 @@ export default function PnlPage() {
           <div className={styles.zSummaryItem}>
             <span className={styles.zSummaryLabel}>Net Realized P&L</span>
             <span className={`${styles.zSummaryValue} mono ${totalPnl >= 0 ? "text-profit" : "text-loss"}`} style={{ fontSize: '18px', fontWeight: '700' }}>
-              {totalPnl >= 0 ? "+" : ""}₹{Math.abs(totalPnl).toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+              {totalPnl >= 0 ? "+" : ""}₹{Math.abs(totalPnl).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
           </div>
         </div>
@@ -396,32 +400,35 @@ export default function PnlPage() {
         <div className={styles.tableSection}>
           <div className={styles.tableHeader}>
             <span className={styles.tableHeaderCell}>Date</span>
-            <span className={`${styles.tableHeaderCell} ${styles.right}`}>P&L</span>
+            <span className={`${styles.tableHeaderCell} ${styles.right}`}>Gross P&L</span>
             <span className={`${styles.tableHeaderCell} ${styles.right}`}>Charges</span>
-            <span className={`${styles.tableHeaderCell} ${styles.right}`}>Trades</span>
+            <span className={`${styles.tableHeaderCell} ${styles.right}`}>Net P&L</span>
           </div>
           <div className={styles.tableBody}>
-            {[...filtered].reverse().map((d, i) => (
-              <div key={i} className={styles.tableRow}>
-                <span className={styles.tableCell}>
-                  <span className={styles.datePrimary}>
-                    {new Date(d.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+            {[...filtered].reverse().map((d, i) => {
+              const grossPnl = d.netPnl + d.charges;
+              return (
+                <div key={i} className={styles.tableRow}>
+                  <span className={styles.tableCell}>
+                    <span className={styles.datePrimary}>
+                      {new Date(d.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                    </span>
+                    <span className={styles.dateSub}>
+                      {new Date(d.date).toLocaleDateString("en-IN", { weekday: "short" })}
+                    </span>
                   </span>
-                  <span className={styles.dateSub}>
-                    {new Date(d.date).toLocaleDateString("en-IN", { weekday: "short" })}
+                  <span className={`${styles.tableCell} ${styles.right} mono`} style={{ color: grossPnl >= 0 ? "var(--profit-green)" : "var(--loss-red)" }}>
+                    {grossPnl >= 0 ? "+" : ""}₹{Math.abs(grossPnl).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
-                </span>
-                <span className={`${styles.tableCell} ${styles.right} mono`} style={{ color: d.netPnl >= 0 ? "var(--profit-green)" : "var(--loss-red)" }}>
-                  {d.netPnl >= 0 ? "+" : ""}₹{Math.abs(d.netPnl).toLocaleString("en-IN", { maximumFractionDigits: 0 })}
-                </span>
-                <span className={`${styles.tableCell} ${styles.right} mono`} style={{ color: "var(--text-muted)" }}>
-                  ₹{d.charges.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
-                </span>
-                <span className={`${styles.tableCell} ${styles.right} mono`}>
-                  {d.numTrades}
-                </span>
-              </div>
-            ))}
+                  <span className={`${styles.tableCell} ${styles.right} mono`} style={{ color: "#ff5252" }}>
+                    -₹{d.charges.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                  <span className={`${styles.tableCell} ${styles.right} mono`} style={{ color: d.netPnl >= 0 ? "var(--profit-green)" : "var(--loss-red)", fontWeight: "bold" }}>
+                    {d.netPnl >= 0 ? "+" : ""}₹{Math.abs(d.netPnl).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
         </>)}

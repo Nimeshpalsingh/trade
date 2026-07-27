@@ -1,4 +1,5 @@
 "use client";
+import { API_URL } from "../utils/apiConfig";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
@@ -60,7 +61,7 @@ export default function ManagePage() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const res = await fetch("http://localhost:8000/api/settings", {
+        const res = await fetch(`${API_URL}/settings`, {
           headers: {
             "Accept": "application/json",
             "Authorization": "Bearer 1|6Jz5W4mBp114wk1fmxxjjg3bPNKHBrEsiHjnSEW2c20da63f"
@@ -218,7 +219,7 @@ export default function ManagePage() {
         ? { id: itemToDelete } 
         : { name: itemToDelete };
         
-      await fetch(`http://localhost:8000/api/settings/${endpoint}`, { 
+      await fetch(`${API_URL}/settings/${endpoint}`, { 
         method: "DELETE", headers, body: JSON.stringify(payload) 
       });
     }
@@ -247,13 +248,13 @@ export default function ManagePage() {
       }
       
       if (formState.mode === "ADD") {
-        await fetch("http://localhost:8000/api/settings/symbols", { method: "POST", headers, body: JSON.stringify({ name: bSymbol, breakeven_value: bValue.trim() }) });
+        await fetch(`${API_URL}/settings/symbols`, { method: "POST", headers, body: JSON.stringify({ name: bSymbol, breakeven_value: bValue.trim() }) });
         setData((prev) => ({
           ...prev,
           breakeven: [...prev.breakeven, { id: Date.now().toString(), symbol: bSymbol, value: bValue.trim() }]
         }));
       } else {
-        await fetch("http://localhost:8000/api/settings/breakeven", { method: "PUT", headers, body: JSON.stringify({ id: formState.originalId, symbol: bSymbol, value: bValue.trim() }) });
+        await fetch(`${API_URL}/settings/breakeven`, { method: "PUT", headers, body: JSON.stringify({ id: formState.originalId, symbol: bSymbol, value: bValue.trim() }) });
         setData((prev) => ({
           ...prev,
           breakeven: prev.breakeven.map(item => 
@@ -271,14 +272,14 @@ export default function ManagePage() {
       }
       
       if (formState.mode === "ADD") {
-        const res = await fetch("http://localhost:8000/api/settings/sessions", { method: "POST", headers, body: JSON.stringify({ name: sName.trim(), start_time: sStartTime, end_time: sEndTime }) });
+        const res = await fetch(`${API_URL}/settings/sessions`, { method: "POST", headers, body: JSON.stringify({ name: sName.trim(), start_time: sStartTime, end_time: sEndTime }) });
         const resData = await res.json();
         setData((prev) => ({
           ...prev,
           sessions: [...prev.sessions, { id: resData.id ? resData.id.toString() : Date.now().toString(), name: sName.trim(), startTime: sStartTime, endTime: sEndTime }]
         }));
       } else {
-        await fetch("http://localhost:8000/api/settings/sessions", { method: "PUT", headers, body: JSON.stringify({ id: formState.originalId, name: sName.trim(), start_time: sStartTime, end_time: sEndTime }) });
+        await fetch(`${API_URL}/settings/sessions`, { method: "PUT", headers, body: JSON.stringify({ id: formState.originalId, name: sName.trim(), start_time: sStartTime, end_time: sEndTime }) });
         setData((prev) => ({
           ...prev,
           sessions: prev.sessions.map(item => 
@@ -296,14 +297,14 @@ export default function ManagePage() {
       }
       
       if (formState.mode === "ADD") {
-        const res = await fetch("http://localhost:8000/api/settings/risk-limits", { method: "POST", headers, body: JSON.stringify({ type: rType.trim(), value: rValue.toString().trim() }) });
+        const res = await fetch(`${API_URL}/settings/risk-limits`, { method: "POST", headers, body: JSON.stringify({ type: rType.trim(), value: rValue.toString().trim() }) });
         const resData = await res.json();
         setData((prev) => ({
           ...prev,
           riskLimits: [...prev.riskLimits, { id: resData.id ? resData.id.toString() : Date.now().toString(), type: rType.trim(), value: rValue.toString().trim() }]
         }));
       } else {
-        await fetch("http://localhost:8000/api/settings/risk-limits", { method: "PUT", headers, body: JSON.stringify({ id: formState.originalId, type: rType.trim(), value: rValue.toString().trim() }) });
+        await fetch(`${API_URL}/settings/risk-limits`, { method: "PUT", headers, body: JSON.stringify({ id: formState.originalId, type: rType.trim(), value: rValue.toString().trim() }) });
         setData((prev) => ({
           ...prev,
           riskLimits: prev.riskLimits.map(item => 
@@ -332,7 +333,7 @@ export default function ManagePage() {
         else if (activeCategory === "rules") endpoint = "rules";
 
         if (endpoint) {
-          await fetch(`http://localhost:8000/api/settings/${endpoint}`, { method: "POST", headers, body: JSON.stringify({ name: inputValue.trim() }) });
+          await fetch(`${API_URL}/settings/${endpoint}`, { method: "POST", headers, body: JSON.stringify({ name: inputValue.trim() }) });
         }
 
         setData((prev) => ({
@@ -350,7 +351,7 @@ export default function ManagePage() {
         else if (activeCategory === "rules") endpoint = "rules";
 
         if (endpoint) {
-          await fetch(`http://localhost:8000/api/settings/${endpoint}`, { method: "PUT", headers, body: JSON.stringify({ old_name: formState.originalId, new_name: inputValue.trim() }) });
+          await fetch(`${API_URL}/settings/${endpoint}`, { method: "PUT", headers, body: JSON.stringify({ old_name: formState.originalId, new_name: inputValue.trim() }) });
         }
 
         setData((prev) => ({

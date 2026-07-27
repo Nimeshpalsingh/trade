@@ -11,9 +11,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Cell,
-  PieChart,
-  Pie,
+  Cell
 } from "recharts";
 
 const today = new Date();
@@ -79,10 +77,10 @@ export default function AnalyticsPage() {
 
     if (dateRange === "thisMonth") {
       start = new Date(today.getFullYear(), today.getMonth(), 1);
-      end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      end = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59);
     } else if (dateRange === "lastMonth") {
       start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-      end = new Date(today.getFullYear(), today.getMonth(), 0);
+      end = new Date(today.getFullYear(), today.getMonth(), 0, 23, 59, 59);
     } else if (dateRange === "custom") {
       start = new Date(customStart);
       end = new Date(customEnd);
@@ -294,8 +292,8 @@ export default function AnalyticsPage() {
         <div className={`${styles.card} glass-card`}>
           <h3 className={styles.cardTitle}>Win Rate by Setup</h3>
           {setupData.length > 0 ? (
-            <div className={styles.chartBody}>
-              <ResponsiveContainer width="100%" height={220}>
+            <div className={styles.chartBody} style={{ height: "220px", width: "100%" }}>
+              <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={setupData} layout="vertical" margin={{ top: 5, right: 30, left: 30, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" horizontal={false} />
                   <XAxis type="number" hide domain={[0, 100]} />
@@ -318,8 +316,8 @@ export default function AnalyticsPage() {
         <div className={`${styles.card} glass-card`}>
           <h3 className={styles.cardTitle}>Win Rate by Time Session</h3>
           {sessionData.length > 0 ? (
-            <div className={styles.chartBody}>
-              <ResponsiveContainer width="100%" height={200}>
+            <div className={styles.chartBody} style={{ height: "200px", width: "100%" }}>
+              <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={sessionData} margin={{ top: 15, right: 10, left: -20, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
                   <XAxis dataKey="name" tick={{ fill: "#a0a0b0", fontSize: 10 }} axisLine={false} tickLine={false} angle={-15} textAnchor="end" />
@@ -342,8 +340,8 @@ export default function AnalyticsPage() {
         <div className={`${styles.card} glass-card`}>
           <h3 className={styles.cardTitle}>Avg Risk:Reward by Setup</h3>
           {setupData.length > 0 ? (
-            <div className={styles.chartBody}>
-              <ResponsiveContainer width="100%" height={200}>
+            <div className={styles.chartBody} style={{ height: "200px", width: "100%" }}>
+              <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={setupData} margin={{ top: 15, right: 10, left: -20, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
                   <XAxis dataKey="name" tick={{ fill: "#a0a0b0", fontSize: 10 }} axisLine={false} tickLine={false} angle={-15} textAnchor="end" />
@@ -366,8 +364,8 @@ export default function AnalyticsPage() {
         <div className={`${styles.card} glass-card`}>
           <h3 className={styles.cardTitle}>Total Cost of Mistakes (Losses)</h3>
           {mistakeData.length > 0 ? (
-            <div className={styles.chartBody}>
-              <ResponsiveContainer width="100%" height={220}>
+            <div className={styles.chartBody} style={{ height: "220px", width: "100%" }}>
+              <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={mistakeData} layout="vertical" margin={{ top: 5, right: 30, left: 30, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" horizontal={false} />
                   <XAxis type="number" hide />

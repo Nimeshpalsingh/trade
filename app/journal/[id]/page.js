@@ -1,17 +1,19 @@
 "use client";
+import { API_URL } from "../../utils/apiConfig";
 import { useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import styles from "./tradeDetails.module.css";
 
 import { fetchAndProcessTrades } from "../../utils/tradeUtils";
 import { useEffect } from "react";
+import { getSession } from "next-auth/react";
 
 export default function TradeDetailsPage() {
   const params = useParams();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("Basic");
   const [allTrades, setAllTrades] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [zoomedImage, setZoomedImage] = useState(null);
 
   useEffect(() => {
     fetchAndProcessTrades().then(data => {
@@ -48,10 +50,26 @@ export default function TradeDetailsPage() {
   const allMistakesList = ["FOMO", "Overtrading", "Revenge Trading", "RR Not Maintained", "Early Exit"];
   const allRulesList = ["Liquidity Taken", "Inducement", "BOS", "CHOCH", "Order Block", "Fair Value Gap"];
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (confirm("Are you sure you want to delete this trade?")) {
-      alert("Trade deleted successfully.");
-      router.push("/journal");
+      try {
+        const session = await getSession();
+        const token = session?.apiToken ? `Bearer ${session.apiToken}` : "Bearer 1|6Jz5W4mBp114wk1fmxxjjg3bPNKHBrEsiHjnSEW2c20da63f";
+        const res = await fetch(`${API_URL}/trades/${trade.id}`, {
+          method: "DELETE",
+          headers: {
+            "Authorization": token
+          }
+        });
+        if (res.ok) {
+          alert("Trade deleted successfully.");
+          router.push("/journal");
+        } else {
+          alert("Failed to delete trade.");
+        }
+      } catch (err) {
+        alert("An error occurred while deleting.");
+      }
     }
   };
 
@@ -72,19 +90,21 @@ export default function TradeDetailsPage() {
         <div className={styles.headerTitles}>
           <h1 className={styles.title}>{trade.symbol}</h1>
           <p className={styles.subtitle}>
-            <span className={trade.type === "LONG" ? styles.textGreen : styles.textRed}>{trade.type === "LONG" ? "Buy" : "Sell"}</span> 
-            {" • "}{trade.date}
+            <span className={`${styles.typeTag} ${trade.type === "LONG" || trade.type === "Buy" ? styles.typeTagBuy : styles.typeTagSell}`}>
+              {trade.type === "LONG" || trade.type === "Buy" ? "BUY" : "SELL"}
+            </span> 
+            <span>{new Date(trade.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
           </p>
         </div>
         <div className={styles.headerActions}>
           <button className={styles.iconBtn} onClick={handleEdit} title="Edit Trade">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
             </svg>
           </button>
-          <button className={styles.iconBtn} onClick={handleDelete} title="Delete Trade" style={{color: 'var(--loss-red)'}}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <button className={styles.iconBtn} onClick={handleDelete} title="Delete Trade" style={{color: '#ef4444'}}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="3 6 5 6 21 6" />
               <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
             </svg>
@@ -117,28 +137,143 @@ export default function TradeDetailsPage() {
         </button>
       </div>
 
-      {/* Tabs */}
-      <div className={styles.tabsContainer}>
-        {["Basic", "Setup", "Bias", "Notes", "Media"].map(tab => (
-          <button 
-            key={tab}
-            className={`${styles.tab} ${activeTab === tab ? styles.tabActive : ""}`}
-            onClick={() => setActiveTab(tab)}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
+      {/* Media Gallery First */}
+      {(trade.images && trade.images.length > 0) || (trade.video_link && getYoutubeEmbedUrl(trade.video_link)) ? (
+        <section className={styles.imageGallery}>
+          {trade.images && trade.images.map((img, i) => (
+            <div key={i} className={styles.galleryItem} onClick={() => setZoomedImage(img)}>
+              <img src={img} alt={`Screenshot ${i+1}`} className={styles.screenshot} />
+            </div>
+          ))}
+          {trade.video_link && getYoutubeEmbedUrl(trade.video_link) && (
+            <div className={styles.galleryItem} style={{ cursor: 'default' }}>
+              <iframe 
+                src={getYoutubeEmbedUrl(trade.video_link)}
+                title="YouTube video player"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className={styles.screenshot} 
+              ></iframe>
+            </div>
+          )}
+        </section>
+      ) : (
+        <div className={styles.emptyBox}>
+          No screenshots or videos attached to this trade.
+        </div>
+      )}
 
-      {/* Content */}
-      <main className={styles.main}>
-        {activeTab === "Basic" && (
-          <div className={styles.overviewSection}>
-            {/* Key Value Pairs */}
+      {/* Premium Stats Row */}
+      <section className={styles.statsRow}>
+        <div className={styles.statCard}>
+          <span className={styles.statLabel}>Net PnL</span>
+          <span className={`${styles.statValue} ${trade.pnl >= 0 ? styles.profitText : styles.lossText}`}>
+            {trade.pnl >= 0 ? "+" : "-"}₹{Math.abs(trade.pnl).toLocaleString("en-IN", {minimumFractionDigits: 2})}
+          </span>
+        </div>
+        <div className={styles.statCard}>
+          <span className={styles.statLabel}>Risk/Reward</span>
+          <span className={styles.statValue}>
+            {trade.rr > 0 ? `1 : ${trade.rr}` : "-"}
+          </span>
+        </div>
+        <div className={styles.statCard}>
+          <span className={styles.statLabel}>Risk Amount</span>
+          <span className={styles.statValue} style={{color: '#ef4444'}}>
+            ₹{(Math.abs(parseFloat(trade.entry_price || 0) - parseFloat(trade.sl || 0)) * parseFloat(trade.qty || 0)).toLocaleString("en-IN", {minimumFractionDigits: 2})}
+          </span>
+        </div>
+        <div className={styles.statCard}>
+          <span className={styles.statLabel}>Capital Used</span>
+          <span className={styles.statValue}>
+            ₹{(parseFloat(trade.entry_price || 0) * parseFloat(trade.qty || 0)).toLocaleString("en-IN", {minimumFractionDigits: 2})}
+          </span>
+        </div>
+        <div className={styles.statCard}>
+          <span className={styles.statLabel}>Avg Entry</span>
+          <span className={styles.statValue}>
+            ₹{parseFloat(trade.entry_price || 0).toLocaleString("en-IN", {minimumFractionDigits: 2})}
+          </span>
+        </div>
+      </section>
+
+      {/* Main Content Grid */}
+      <main className={styles.mainGrid}>
+        
+        {/* Left Column */}
+        <div className={styles.leftCol}>
+          <div className={styles.sectionBlock}>
+            <h3 className={styles.sectionTitle}>Trade Context</h3>
+            <div className={styles.tagsGrid}>
+              {trade.setup && <span className={styles.contextTag}>Setup: {trade.setup}</span>}
+              {trade.trend && <span className={styles.contextTag}>Trend: {trade.trend}</span>}
+              {trade.session && <span className={styles.contextTag}>Session: {trade.session}</span>}
+            </div>
+          </div>
+
+          <div className={styles.sectionBlock}>
+            <h3 className={styles.sectionTitle}>Strategy Rules</h3>
+            <div className={styles.tagsGrid}>
+              {trade.rules && trade.rules.map(r => (
+                <span key={r} className={styles.ruleChip}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  {r}
+                </span>
+              ))}
+              {(!trade.rules || trade.rules.length === 0) && (
+                <span style={{color: "#71717a", fontSize: "14px"}}>No rules marked.</span>
+              )}
+            </div>
+          </div>
+
+          <div className={styles.sectionBlock}>
+            <h3 className={styles.sectionTitle}>Mistakes Made</h3>
+            <div className={styles.tagsGrid}>
+              {trade.mistakes && trade.mistakes.map(m => (
+                <span key={m} className={styles.mistakeChip}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                  {m}
+                </span>
+              ))}
+              {(!trade.mistakes || trade.mistakes.length === 0) && (
+                <span style={{color: "#34d399", fontSize: "14px"}}>No mistakes recorded! Great job.</span>
+              )}
+            </div>
+          </div>
+
+          <div className={styles.sectionBlock}>
+            <h3 className={styles.sectionTitle}>Trade Notes</h3>
+            <div className={styles.notesBox}>
+              {trade.notes || "No notes added for this trade."}
+            </div>
+          </div>
+
+          {trade.exits && trade.exits.length > 0 && (
+            <div className={styles.sectionBlock}>
+              <h3 className={styles.sectionTitle}>Partial Exits</h3>
+              <div className={styles.exitsList}>
+                {trade.exits.map((ex, idx) => (
+                  <div key={idx} className={styles.exitRow}>
+                    <span className={styles.exitQty}>{ex.qty} Qty</span>
+                    <span className={styles.exitPrice}>@ ₹{parseFloat(ex.price).toLocaleString("en-IN", {minimumFractionDigits: 2})}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+
+        </div>
+
+        {/* Right Column */}
+        <div className={styles.rightCol}>
+          <div className={styles.sectionBlock}>
+            <h3 className={styles.sectionTitle}>Execution Details</h3>
             <div className={styles.kvList}>
               <div className={styles.kvRow}>
-                <span className={styles.kvLabel}>Entry Price</span>
-                <span className={styles.kvValue}>{parseFloat(trade.entry_price || 0).toLocaleString("en-IN", {minimumFractionDigits: 2})}</span>
+                <span className={styles.kvLabel}>Quantity</span>
+                <span className={styles.kvValue}>{parseFloat(trade.qty || 0)}</span>
               </div>
               <div className={styles.kvRow}>
                 <span className={styles.kvLabel}>Avg. Exit Price</span>
@@ -153,163 +288,53 @@ export default function TradeDetailsPage() {
                 <span className={styles.kvValue}>{parseFloat(trade.sl || 0).toLocaleString("en-IN", {minimumFractionDigits: 2})}</span>
               </div>
               <div className={styles.kvRow}>
-                <span className={styles.kvLabel}>Target Price</span>
-                <span className={styles.kvValue}>N/A</span>
-              </div>
-              <div className={styles.kvRow}>
-                <span className={styles.kvLabel}>Quantity</span>
-                <span className={styles.kvValue}>{parseFloat(trade.qty || 0)}</span>
-              </div>
-              <div className={styles.kvRow}>
-                <span className={styles.kvLabel}>Capital Used</span>
-                <span className={styles.kvValue}>₹ {(parseFloat(trade.entry_price || 0) * parseFloat(trade.qty || 0)).toLocaleString("en-IN", {minimumFractionDigits: 2})}</span>
+                <span className={styles.kvLabel}>Max Target Price</span>
+                <span className={styles.kvValue}>{
+                  trade.exits && trade.exits.length > 0 
+                  ? (trade.type === 'LONG' || trade.type === 'Buy' 
+                      ? Math.max(...trade.exits.map(e => parseFloat(e.price))) 
+                      : Math.min(...trade.exits.map(e => parseFloat(e.price)))
+                    ).toLocaleString("en-IN", {minimumFractionDigits: 2})
+                  : "N/A"
+                }</span>
               </div>
               <div className={styles.kvRow}>
                 <span className={styles.kvLabel}>Charges / Brokerage</span>
                 <span className={styles.kvValue}>₹ {trade.charges.toLocaleString("en-IN")}</span>
               </div>
-              <div className={styles.kvRow}>
-                <span className={styles.kvLabel}>Risk / Reward</span>
-                <span className={styles.kvValue}>1 : {trade.rr >= 0 ? trade.rr : Math.abs(trade.rr)}</span>
-              </div>
-              <div className={styles.kvRow}>
-                <span className={styles.kvLabel}>Net PnL</span>
-                <span className={`${styles.kvValue} ${trade.pnl >= 0 ? styles.textGreen : styles.textRed}`}>
-                  {trade.pnl >= 0 ? "+" : "-"}₹ {Math.abs(trade.pnl).toLocaleString("en-IN", {minimumFractionDigits: 2})}
-                </span>
-              </div>
             </div>
-
-            {/* Partial Exits Section */}
-            {trade.exits && trade.exits.length > 0 && (
-              <div className={styles.sectionBlock}>
-                <h3 className={styles.sectionTitle}>Exits Breakdown</h3>
-                <div className={styles.exitsList}>
-                  {trade.exits.map((ex, idx) => (
-                    <div key={idx} className={styles.exitRow}>
-                      <span className={styles.exitQty}>{ex.qty} Qty</span>
-                      <span className={styles.exitPrice}>@ ₹{parseFloat(ex.price).toLocaleString("en-IN", {minimumFractionDigits: 2})}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
-        )}
 
-        {activeTab === "Setup" && (
-          <div className={styles.overviewSection}>
-            {/* Quick Context Tags */}
-            <div className={styles.contextTags}>
-              {trade.setup && <span className={styles.contextTag}>Setup: {trade.setup}</span>}
-              <span className={styles.contextTag}>Trend: {trade.trend}</span>
-              <span className={styles.contextTag}>Session: {trade.session}</span>
-            </div>
-
-            {/* Strategy Rules Section */}
-            <div className={styles.sectionBlock}>
-              <h3 className={styles.sectionTitle}>Strategy Rules Followed</h3>
-              <div className={styles.mistakesGrid}>
-                {trade.rules && trade.rules.map(r => (
-                  <div key={r} className={`${styles.ruleChip}`}>
-                    ✅ {r}
+          <div className={styles.sectionBlock}>
+            <h3 className={styles.sectionTitle}>Multi-Timeframe Bias</h3>
+            {trade.biases && trade.biases.length > 0 ? (
+              <div className={styles.biasGridDisplay}>
+                {trade.biases.map((b, i) => (
+                  <div key={i} className={styles.biasDisplayRow}>
+                    <span className={styles.biasDisplayTf}>{b.time_frame || "Timeframe"}</span>
+                    <span className={styles.biasDisplayVal} style={{color: b.bias === 'Up' || b.bias === 'Bullish' ? '#10b981' : (b.bias === 'Down' || b.bias === 'Bearish' ? '#ef4444' : '#fff')}}>
+                      {b.bias || "Trend"}
+                    </span>
                   </div>
                 ))}
-                {(!trade.rules || trade.rules.length === 0) && (
-                  <span style={{color: "var(--text-muted)", fontSize: "13px"}}>No specific rules marked.</span>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === "Bias" && (
-          <div className={styles.overviewSection}>
-            {/* Bias Section */}
-            {trade.biases && trade.biases.length > 0 ? (
-              <div className={styles.sectionBlock}>
-                <h3 className={styles.sectionTitle}>Multi-Timeframe Bias</h3>
-                <div className={styles.biasGridDisplay}>
-                  {trade.biases.map((b, i) => (
-                    <div key={i} className={styles.biasDisplayRow}>
-                      <span className={styles.biasDisplayTf}>{b.timeFrame?.name || "Timeframe"}</span>
-                      <span className={`${styles.biasDisplayVal} ${b.trend?.name === 'Up' || b.trend?.name === 'Bullish' ? styles.textGreen : (b.trend?.name === 'Down' || b.trend?.name === 'Bearish' ? styles.textRed : "")}`}>
-                        {b.trend?.name || "Trend"}
-                      </span>
-                    </div>
-                  ))}
-                </div>
               </div>
             ) : (
-              <div className={styles.emptyTab}>
-                No Multi-Timeframe Bias added for this trade.
-              </div>
+              <span style={{color: "#71717a", fontSize: "14px"}}>No Multi-Timeframe Bias added.</span>
             )}
           </div>
-        )}
-
-        {activeTab === "Notes" && (
-          <div className={styles.overviewSection}>
-            {/* Mistakes Section */}
-            <div className={styles.sectionBlock}>
-              <h3 className={styles.sectionTitle}>Mistakes</h3>
-              <div className={styles.mistakesGrid}>
-                {trade.mistakes && trade.mistakes.map(m => (
-                  <div key={m} className={`${styles.mistakeChip} ${styles.mistakeActive}`}>
-                    ⚠️ {m}
-                  </div>
-                ))}
-                {(!trade.mistakes || trade.mistakes.length === 0) && (
-                  <span style={{color: "var(--text-muted)", fontSize: "13px"}}>No mistakes recorded! Great job.</span>
-                )}
-              </div>
-            </div>
-
-             <div className={styles.sectionBlock}>
-              <h3 className={styles.sectionTitle}>Trade Notes</h3>
-              <div className={styles.notesBox}>
-                {trade.notes || "No notes added for this trade."}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === "Media" && (
-          <div className={styles.overviewSection}>
-            {trade.videoLink && getYoutubeEmbedUrl(trade.videoLink) && (
-              <div className={styles.sectionBlock}>
-                <h3 className={styles.sectionTitle}>Screen Recording / Video</h3>
-                <div className={styles.videoWrapper}>
-                  <iframe 
-                    src={getYoutubeEmbedUrl(trade.videoLink)}
-                    title="YouTube video player"
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    className={styles.videoIframe}
-                  ></iframe>
-                </div>
-              </div>
-            )}
-
-            <div className={styles.sectionBlock}>
-              <h3 className={styles.sectionTitle}>Chart Screenshots</h3>
-              {trade.images && trade.images.length > 0 ? (
-                <div className={styles.imagesGrid}>
-                  {trade.images.map((img, i) => (
-                    <img key={i} src={img} alt={`Trade screenshot ${i+1}`} className={styles.screenshot} />
-                  ))}
-                </div>
-              ) : (
-                <div className={styles.emptyBox}>
-                  No images attached to this trade.
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+        </div>
 
       </main>
+
+      {/* Image Zoom Modal Overlay */}
+      {zoomedImage && (
+        <div className={styles.imageModalOverlay} onClick={() => setZoomedImage(null)}>
+          <button className={styles.closeModalBtn} onClick={(e) => { e.stopPropagation(); setZoomedImage(null); }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+          <img src={zoomedImage} alt="Zoomed Screenshot" className={styles.zoomedImage} onClick={(e) => e.stopPropagation()} />
+        </div>
+      )}
     </div>
   );
 }

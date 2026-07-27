@@ -1,5 +1,7 @@
 "use client";
+import { API_URL } from "../utils/apiConfig";
 import { useState, useEffect, useRef } from "react";
+import { getSession } from "next-auth/react";
 import BottomNav from "../components/BottomNav";
 import styles from "./addtrade.module.css";
 
@@ -17,18 +19,23 @@ export default function AddTradePage() {
     setups: [], sessions: [], timeFrames: [], symbols: [], 
     marketTrends: [], marketTypes: [], breakeven: [], mistakes: [], rules: []
   });
+  const [rawSymbols, setRawSymbols] = useState([]);
+  const [editId, setEditId] = useState(null);
 
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const res = await fetch("http://localhost:8000/api/settings", {
+        const session = await getSession();
+        const token = session?.apiToken ? `Bearer ${session.apiToken}` : "Bearer 1|6Jz5W4mBp114wk1fmxxjjg3bPNKHBrEsiHjnSEW2c20da63f";
+        const res = await fetch(`${API_URL}/settings`, {
           headers: {
             "Accept": "application/json",
-            "Authorization": "Bearer 1|6Jz5W4mBp114wk1fmxxjjg3bPNKHBrEsiHjnSEW2c20da63f"
+            "Authorization": token
           }
         });
         if (res.ok) {
           const data = await res.json();
+          setRawSymbols(data.symbols || []);
           setSettings({
             setups: [...new Set(data.setups.map(s => s.name.trim()))],
             sessions: data.sessions.map(s => ({ id: s.id.toString(), name: s.name.trim(), startTime: s.start_time, endTime: s.end_time })),
@@ -40,6 +47,18 @@ export default function AddTradePage() {
             rules: [...new Set(data.rules.map(s => s.name.trim()))],
             breakeven: data.symbols.filter(s => s.breakeven_value).map(s => ({ id: s.id.toString(), symbol: s.name, value: s.breakeven_value }))
           });
+
+          // Pre-populate riskAmount and step_size if default symbol has them
+          if (typeof window !== "undefined") {
+             const defSymStr = localStorage.getItem("defaultSymbol");
+             if (defSymStr) {
+               const foundSym = data.symbols.find(s => s.name.trim() === defSymStr);
+               if (foundSym) {
+                 if (foundSym.default_risk) setRiskAmount(foundSym.default_risk);
+                 if (foundSym.step_size) setSlStepSize(parseFloat(foundSym.step_size) || 0.01);
+               }
+             }
+          }
         }
       } catch (e) {
         console.error("Failed to fetch settings", e);
@@ -58,9 +77,103 @@ export default function AddTradePage() {
   
   // Step 1: Basic
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
-  const [marketType, setMarketType] = useState("Options");
+  const [marketType, setMarketType] = useState("");
   const [type, setType] = useState("LONG");
-  const [symbol, setSymbol] = useState("NIFTY");
+  const [symbol, setSymbol] = useState("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      const id = urlParams.get('edit');
+      if (id) {
+        setEditId(id);
+        fetchTradeForEdit(id);
+      } else {
+        const defMt = localStorage.getItem("defaultMarketType");
+        if (defMt) setMarketType(defMt);
+        
+        const defSym = localStorage.getItem("defaultSymbol");
+        if (defSym) setSymbol(defSym);
+      }
+    }
+  }, []);
+
+  const fetchTradeForEdit = async (id) => {
+    try {
+      const session = await getSession();
+      const token = session?.apiToken ? `Bearer ${session.apiToken}` : "Bearer 1|6Jz5W4mBp114wk1fmxxjjg3bPNKHBrEsiHjnSEW2c20da63f";
+      const res = await fetch(`${API_URL}/trades/${id}`, {
+        headers: {
+          "Accept": "application/json",
+          "Authorization": token
+        }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.date) setDate(data.date);
+        if (data.market_type) setMarketType(data.market_type.name);
+        if (data.type) setType(data.type);
+        if (data.symbol) setSymbol(data.symbol.name);
+        if (data.qty) setQty(data.qty.toString());
+        if (data.entry_price) setEntry(data.entry_price.toString());
+        if (data.sl) {
+            setSl(data.sl.toString());
+            if (data.entry_price) {
+                const slPts = Math.abs(parseFloat(data.entry_price) - parseFloat(data.sl));
+                setSlPoints(slPts.toFixed(2));
+            }
+        }
+        if (data.setup) setStrategy(data.setup.name);
+        if (data.time_frame) setTimeFrame(data.time_frame.name);
+        if (data.market_trend) setMarketTrend(data.market_trend.name);
+        if (data.session) setSession(data.session.name);
+        if (data.notes) setNotes(data.notes);
+        if (data.video_link) setVideoLink(data.video_link);
+        
+        if (data.exits && data.exits.length > 0) {
+          setExits(data.exits.map(e => ({ qty: e.qty.toString(), price: e.price.toString() })));
+          
+          if (data.entry_price) {
+             const firstExitPrice = parseFloat(data.exits[0].price);
+             const entryPrice = parseFloat(data.entry_price);
+             const calcTpPts = Math.abs(firstExitPrice - entryPrice);
+             setTpPoints(calcTpPts.toFixed(2));
+             
+             if (data.sl) {
+                const slPts = Math.abs(entryPrice - parseFloat(data.sl));
+                if (slPts > 0) {
+                   setRewardRatio((calcTpPts / slPts).toFixed(2));
+                }
+             }
+          }
+        }
+        
+        if (data.biases && data.biases.length > 0) {
+          const loadedBiases = {};
+          data.biases.forEach(b => {
+             if (b.time_frame && b.bias) {
+                loadedBiases[b.time_frame] = b.bias;
+             }
+          });
+          setBiases(loadedBiases);
+        }
+        
+        if (data.rules && data.rules.length > 0) {
+          setSelectedRules(data.rules.map(r => r.name));
+        }
+        
+        if (data.mistakes && data.mistakes.length > 0) {
+          setSelectedMistakes(data.mistakes.map(m => m.name));
+        }
+        
+        if (data.images && data.images.length > 0) {
+          setImages(data.images.map(img => img.image_path || img));
+        }
+      }
+    } catch (e) {
+      console.error("Failed to fetch trade", e);
+    }
+  };
   const [qty, setQty] = useState("");
   const [entry, setEntry] = useState("");
   const [exits, setExits] = useState([{ qty: "", price: "" }]);
@@ -68,20 +181,29 @@ export default function AddTradePage() {
   const [slPoints, setSlPoints] = useState("");
   const [tpPoints, setTpPoints] = useState("");
   const [riskAmount, setRiskAmount] = useState("");
-  const [rewardRatio, setRewardRatio] = useState("");
+  const [rewardRatio, setRewardRatio] = useState("2, 3");
+  const [slStepSize, setSlStepSize] = useState(0.01);
   
+  const [manualCharges, setManualCharges] = useState("");
+  const currencySymbol = (marketType && marketType.toLowerCase().includes("crypto")) ? "$" : "₹";
   // Computed values
   const [netPnl, setNetPnl] = useState(0);
   const [rr, setRr] = useState(0);
   const [chargesAmount, setChargesAmount] = useState(0);
 
+  const filteredSymbols = [...new Set(rawSymbols.filter(s => {
+    if (!marketType) return true;
+    if (!s.market_type) return true; // Show unlinked symbols everywhere
+    return s.market_type === marketType;
+  }).map(s => s.name.trim()))];
+
   // Step 2: Setup
-  const [strategy, setStrategy] = useState("Breakout");
-  const [timeFrame, setTimeFrame] = useState("15 Minutes");
-  const [marketTrend, setMarketTrend] = useState("Trending");
-  const [session, setSession] = useState("1"); // Using ID for Morning
+  const [strategy, setStrategy] = useState("");
+  const [timeFrame, setTimeFrame] = useState("");
+  const [marketTrend, setMarketTrend] = useState("");
+  const [session, setSession] = useState(""); 
   const [biases, setBiases] = useState({}); // { '1M': 'Up', '1D': 'Down' }
-  const [selectedRules, setSelectedRules] = useState(["Liquidity Taken", "BOS", "CHOCH", "HTF Trend", "RSI Confirmed", "Session Confirmed"]);
+  const [selectedRules, setSelectedRules] = useState([]);
 
   // Step 4: Notes
   const [notes, setNotes] = useState("");
@@ -119,20 +241,23 @@ export default function AddTradePage() {
       });
 
       // 2. Charges
-      let charges = 0;
+      let autoCharges = 0;
       const bRule = settings.breakeven.find(b => b.symbol === symbol);
-      if (bRule) {
-        if (bRule.value.includes("%")) {
-          const percent = parseFloat(bRule.value.replace("%", ""));
+      if (bRule && bRule.value) {
+        const valStr = String(bRule.value).toLowerCase();
+        if (valStr.includes("%")) {
+          const percent = parseFloat(valStr.replace("%", ""));
           turnover = (en * totalExitedQty) + totalExitValue;
-          charges = turnover * (percent / 100);
+          autoCharges = turnover * (percent / 100);
         } else {
-          charges = parseFloat(bRule.value.replace(/[^0-9.]/g, ""));
+          const bePoints = parseFloat(valStr.replace(/[^0-9.]/g, ""));
+          autoCharges = bePoints * totalExitedQty;
         }
       }
       
-      setChargesAmount(charges);
-      setNetPnl(gross - charges);
+      const finalCharges = manualCharges !== "" ? parseFloat(manualCharges) || 0 : autoCharges;
+      setChargesAmount(finalCharges);
+      setNetPnl(gross - finalCharges);
 
       // 3. Risk Reward
       if (stop > 0 && totalExitedQty > 0) {
@@ -152,7 +277,7 @@ export default function AddTradePage() {
       setRr(0);
       setChargesAmount(0);
     }
-  }, [qty, entry, exits, sl, type, symbol]);
+  }, [qty, entry, exits, sl, type, symbol, manualCharges]);
 
   // --- Smart Auto-Fill Handlers ---
   const calculateSmart = (field, val, currentExits) => {
@@ -163,7 +288,7 @@ export default function AddTradePage() {
     let currentRR = field === "rewardRatio" ? parseFloat(val) : parseFloat(rewardRatio);
     let currentTpPts = field === "tpPoints" ? parseFloat(val) : parseFloat(tpPoints);
     let currentType = field === "type" ? val : type;
-    let newQty = qty;
+    let newQty = field === "qty" ? val : qty;
 
     // 1. Sync SL Points and SL Price
     if (field === "slPoints" && !isNaN(currentSlPts) && !isNaN(currentEn)) {
@@ -236,6 +361,27 @@ export default function AddTradePage() {
         if (!updatedExits[0].qty && newQty) updatedExits[0].qty = newQty;
         setExits(updatedExits);
       }
+    }
+  };
+
+  const handleSymbolChange = (val) => {
+    setSymbol(val);
+    setErrors(prev => ({...prev, symbol: null}));
+    
+    // Check for default risk amount and step size
+    const foundSym = rawSymbols.find(s => s.name.trim() === val);
+    if (foundSym) {
+      if (foundSym.default_risk) {
+        setRiskAmount(foundSym.default_risk);
+        calculateSmart("riskAmount", foundSym.default_risk, exits);
+      }
+      if (foundSym.step_size) {
+        setSlStepSize(parseFloat(foundSym.step_size) || 0.01);
+      } else {
+        setSlStepSize(0.01); // fallback
+      }
+    } else {
+      setSlStepSize(0.01);
     }
   };
 
@@ -324,33 +470,37 @@ export default function AddTradePage() {
     setImages(prev => prev.filter((_, index) => index !== indexToRemove));
   };
 
+  const validateStep1 = () => {
+    let newErrors = {};
+    if (!marketType) newErrors.marketType = "Required";
+    if (!symbol) newErrors.symbol = "Required";
+    if (!qty || parseFloat(qty) <= 0) newErrors.qty = "Invalid Qty";
+    if (!entry || parseFloat(entry) <= 0) newErrors.entry = "Invalid Price";
+    if (!sl || parseFloat(sl) <= 0) {
+      newErrors.sl = "Invalid Stop Loss";
+    } else if (entry && parseFloat(entry) > 0) {
+      const slVal = parseFloat(sl);
+      const entryVal = parseFloat(entry);
+      if (type === "LONG" && slVal >= entryVal) {
+        newErrors.sl = "SL must be < Entry for LONG";
+      } else if (type === "SHORT" && slVal <= entryVal) {
+        newErrors.sl = "SL must be > Entry for SHORT";
+      }
+    }
+    
+    const hasValidExit = exits.some(ex => (parseFloat(ex.qty) || 0) > 0 && (parseFloat(ex.price) || 0) > 0);
+    if (!hasValidExit) newErrors.exits = "Add at least 1 exit point";
+    
+    let totalExitQty = exits.reduce((sum, ex) => sum + (parseFloat(ex.qty) || 0), 0);
+    if (totalExitQty > (parseFloat(qty) || 0)) newErrors.exits = "Exit Qty exceeds Total";
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleNext = () => {
     if (step === 1) {
-      let newErrors = {};
-      if (!marketType) newErrors.marketType = "Required";
-      if (!symbol) newErrors.symbol = "Required";
-      if (!qty || parseFloat(qty) <= 0) newErrors.qty = "Invalid Qty";
-      if (!entry || parseFloat(entry) <= 0) newErrors.entry = "Invalid Price";
-      if (!sl || parseFloat(sl) <= 0) {
-        newErrors.sl = "Invalid Stop Loss";
-      } else if (entry && parseFloat(entry) > 0) {
-        const slVal = parseFloat(sl);
-        const entryVal = parseFloat(entry);
-        if (type === "LONG" && slVal >= entryVal) {
-          newErrors.sl = "SL must be < Entry for LONG";
-        } else if (type === "SHORT" && slVal <= entryVal) {
-          newErrors.sl = "SL must be > Entry for SHORT";
-        }
-      }
-      
-      const hasValidExit = exits.some(ex => (parseFloat(ex.qty) || 0) > 0 && (parseFloat(ex.price) || 0) > 0);
-      if (!hasValidExit) newErrors.exits = "Add at least 1 exit point";
-      
-      let totalExitQty = exits.reduce((sum, ex) => sum + (parseFloat(ex.qty) || 0), 0);
-      if (totalExitQty > (parseFloat(qty) || 0)) newErrors.exits = "Exit Qty exceeds Total";
-      
-      setErrors(newErrors);
-      if (Object.keys(newErrors).length > 0) return;
+      if (!validateStep1()) return;
     }
     setErrors({});
     setStep(step + 1);
@@ -379,13 +529,17 @@ export default function AddTradePage() {
         images: images,
       };
 
-      const res = await fetch("http://localhost:8000/api/trades", {
-        method: "POST",
+      const method = editId ? "PUT" : "POST";
+      const url = editId ? `${API_URL}/trades/${editId}` : `${API_URL}/trades`;
+
+      const authSession = await getSession();
+      const token = authSession?.apiToken ? `Bearer ${authSession.apiToken}` : "Bearer 1|6Jz5W4mBp114wk1fmxxjjg3bPNKHBrEsiHjnSEW2c20da63f";
+      const res = await fetch(url, {
+        method: method,
         headers: {
           "Content-Type": "application/json",
           "Accept": "application/json",
-          // Hardcoded test user token for demo purposes
-          "Authorization": "Bearer 1|6Jz5W4mBp114wk1fmxxjjg3bPNKHBrEsiHjnSEW2c20da63f"
+          "Authorization": token
         },
         body: JSON.stringify(payload)
       });
@@ -430,7 +584,7 @@ export default function AddTradePage() {
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
               <polyline points="22 4 12 14.01 9 11.01" />
             </svg>
-            Trade Saved Successfully!
+            {editId ? "Trade Updated Successfully!" : "Trade Saved Successfully!"}
           </div>
         ) : (
           <div className={styles.form}>
@@ -444,6 +598,7 @@ export default function AddTradePage() {
                     <button type="button" className={styles.addShortcutBtn} onClick={() => goToManage('marketTypes')}>+ Add</button>
                   </div>
                   <select className={`${styles.input} ${errors.marketType ? styles.inputError : ""}`} value={marketType} onChange={(e) => { setMarketType(e.target.value); setErrors(prev => ({...prev, marketType: null})); }}>
+                    <option value="">Select Market Type</option>
                     {settings.marketTypes && settings.marketTypes.map((s, idx) => <option key={`${s}-${idx}`} value={s}>{s}</option>)}
                   </select>
                   {errors.marketType && <span className={styles.errorText}>{errors.marketType}</span>}
@@ -459,8 +614,9 @@ export default function AddTradePage() {
                       <label className={styles.label}>Symbol</label>
                       <button type="button" className={styles.addShortcutBtn} onClick={() => goToManage('symbols')}>+ Add</button>
                     </div>
-                    <select className={`${styles.input} ${errors.symbol ? styles.inputError : ""}`} value={symbol} onChange={(e) => { setSymbol(e.target.value); setErrors(prev => ({...prev, symbol: null})); }}>
-                      {settings.symbols.map((s, idx) => <option key={`${s}-${idx}`} value={s}>{s}</option>)}
+                    <select className={`${styles.input} ${errors.symbol ? styles.inputError : ""}`} value={symbol} onChange={(e) => handleSymbolChange(e.target.value)}>
+                      <option value="">Select Symbol</option>
+                      {filteredSymbols.map((s, idx) => <option key={`${s}-${idx}`} value={s}>{s}</option>)}
                     </select>
                     {errors.symbol && <span className={styles.errorText}>{errors.symbol}</span>}
                   </div>
@@ -474,18 +630,46 @@ export default function AddTradePage() {
                   </div>
                 </div>
 
-                <div className={styles.row}>
-                  <div className={styles.field}>
-                    <label className={styles.label}>Risk Amount (₹)</label>
-                    <input type="number" className={styles.input} placeholder="e.g. 1000" value={riskAmount} onChange={(e) => handleRiskChange(e.target.value)} />
-                  </div>
-                  <div className={styles.field}>
-                    <label className={styles.label}>Reward Ratio (1:X)</label>
-                    <input type="text" className={styles.input} placeholder="e.g. 2 or 2,3" value={rewardRatio} onChange={(e) => handleRrChange(e.target.value)} />
-                  </div>
-                </div>
+
 
                 <div className={styles.row}>
+                  <div className={styles.field}>
+                    <label className={styles.label}>Risk Amount ({currencySymbol})</label>
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          const currentVal = parseFloat(riskAmount) || 0;
+                          const stepVal = currencySymbol === "$" ? 10 : 100;
+                          const newVal = Math.max(0, currentVal - stepVal);
+                          handleRiskChange(newVal.toString());
+                        }}
+                        style={{ padding: "10px", background: "var(--surface-color)", border: "1px solid var(--border-color)", borderRight: "none", color: "var(--text-primary)", borderRadius: "8px 0 0 8px", cursor: "pointer", fontSize: "16px" }}
+                      >
+                        -
+                      </button>
+                      <input 
+                        type="number" 
+                        className={styles.input} 
+                        placeholder="e.g. 1000" 
+                        value={riskAmount} 
+                        onChange={(e) => handleRiskChange(e.target.value)} 
+                        style={{ borderRadius: "0", flex: 1 }}
+                      />
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          const currentVal = parseFloat(riskAmount) || 0;
+                          const stepVal = currencySymbol === "$" ? 10 : 100;
+                          const newVal = currentVal + stepVal;
+                          handleRiskChange(newVal.toString());
+                        }}
+                        style={{ padding: "10px", background: "var(--surface-color)", border: "1px solid var(--border-color)", borderLeft: "none", color: "var(--text-primary)", borderRadius: "0 8px 8px 0", cursor: "pointer", fontSize: "16px" }}
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
                   <div className={styles.field}>
                     <label className={styles.label}>Total Quantity</label>
                     <input type="number" className={`${styles.input} ${errors.qty ? styles.inputError : ""}`} placeholder="e.g. 50" value={qty} onChange={(e) => { 
@@ -503,32 +687,107 @@ export default function AddTradePage() {
                     }} />
                     {errors.qty && <span className={styles.errorText}>{errors.qty}</span>}
                   </div>
+                </div>
+
+                <div className={styles.row}>
                   <div className={styles.field}>
                     <label className={styles.label}>Entry Price</label>
                     <input type="number" className={`${styles.input} ${errors.entry ? styles.inputError : ""}`} placeholder="0.00" value={entry} onChange={(e) => handleEntryChange(e.target.value)} />
                     {errors.entry && <span className={styles.errorText}>{errors.entry}</span>}
                   </div>
+                  <div className={styles.field}>
+                    <label className={styles.label}>SL (Points)</label>
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          const currentVal = parseFloat(slPoints) || 0;
+                          const newVal = Math.max(0, currentVal - slStepSize).toFixed(slStepSize.toString().split('.')[1]?.length || 2);
+                          handleSlPointsChange(newVal);
+                        }}
+                        style={{ padding: "10px", background: "var(--surface-color)", border: "1px solid var(--border-color)", borderRight: "none", color: "var(--text-primary)", borderRadius: "8px 0 0 8px", cursor: "pointer", fontSize: "16px" }}
+                      >
+                        -
+                      </button>
+                      <input 
+                        type="number" 
+                        step={slStepSize} 
+                        className={`${styles.input} ${errors.slPoints ? styles.inputError : ""}`} 
+                        value={slPoints} 
+                        onChange={(e) => handleSlPointsChange(e.target.value)} 
+                        placeholder="e.g. 10" 
+                        style={{ borderRadius: "0", flex: 1 }}
+                      />
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          const currentVal = parseFloat(slPoints) || 0;
+                          const newVal = (currentVal + slStepSize).toFixed(slStepSize.toString().split('.')[1]?.length || 2);
+                          handleSlPointsChange(newVal);
+                        }}
+                        style={{ padding: "10px", background: "var(--surface-color)", border: "1px solid var(--border-color)", borderLeft: "none", color: "var(--text-primary)", borderRadius: "0 8px 8px 0", cursor: "pointer", fontSize: "16px" }}
+                      >
+                        +
+                      </button>
+                    </div>
+                    {errors.slPoints && <span className={styles.errorText}>{errors.slPoints}</span>}
+                  </div>
                 </div>
-
+                
                 <div className={styles.row}>
                   <div className={styles.field}>
-                    <label className={styles.label}>SL (Points) - Auto Fill</label>
-                    <input type="number" className={styles.input} placeholder="e.g. 20" value={slPoints} onChange={(e) => handleSlPointsChange(e.target.value)} />
-                  </div>
-                  <div className={styles.field}>
                     <label className={styles.label}>Stop Loss Price</label>
-                    <input type="number" className={`${styles.input} ${errors.sl ? styles.inputError : ""}`} placeholder="0.00" value={sl} onChange={(e) => handleSlChange(e.target.value)} />
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          const currentVal = parseFloat(sl) || 0;
+                          const newVal = Math.max(0, currentVal - slStepSize).toFixed(slStepSize.toString().split('.')[1]?.length || 2);
+                          handleSlChange(newVal);
+                        }}
+                        style={{ padding: "10px", background: "var(--surface-color)", border: "1px solid var(--border-color)", borderRight: "none", color: "var(--text-primary)", borderRadius: "8px 0 0 8px", cursor: "pointer", fontSize: "16px" }}
+                      >
+                        -
+                      </button>
+                      <input 
+                        type="number" 
+                        step={slStepSize} 
+                        className={`${styles.input} ${errors.sl ? styles.inputError : ""}`} 
+                        value={sl} 
+                        onChange={(e) => handleSlChange(e.target.value)} 
+                        placeholder="e.g. 190" 
+                        style={{ borderRadius: "0", flex: 1 }}
+                      />
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          const currentVal = parseFloat(sl) || 0;
+                          const newVal = (currentVal + slStepSize).toFixed(slStepSize.toString().split('.')[1]?.length || 2);
+                          handleSlChange(newVal);
+                        }}
+                        style={{ padding: "10px", background: "var(--surface-color)", border: "1px solid var(--border-color)", borderLeft: "none", color: "var(--text-primary)", borderRadius: "0 8px 8px 0", cursor: "pointer", fontSize: "16px" }}
+                      >
+                        +
+                      </button>
+                    </div>
                     {errors.sl && <span className={styles.errorText}>{errors.sl}</span>}
                   </div>
+                  <div className={styles.field}></div>
                 </div>
 
                 <div className={styles.exitsSection}>
                   <div className={styles.exitsHeader}>
                     <label className={styles.label}>Take Profit / Exits (Partial/Trailing)</label>
                   </div>
-                  <div className={styles.field} style={{marginBottom: "16px"}}>
-                    <label className={styles.label}>Target (Points) - Auto Fill</label>
-                    <input type="number" className={styles.input} placeholder="e.g. 40" value={tpPoints} onChange={(e) => handleTpPointsChange(e.target.value)} />
+                  <div className={styles.row} style={{marginBottom: "16px"}}>
+                    <div className={styles.field}>
+                      <label className={styles.label}>Reward Ratios</label>
+                      <input type="text" className={styles.input} placeholder="e.g. 2, 3" value={rewardRatio} onChange={(e) => handleRrChange(e.target.value)} />
+                    </div>
+                    <div className={styles.field}>
+                      <label className={styles.label}>Target (Points)</label>
+                      <input type="number" className={styles.input} placeholder="e.g. 40" value={tpPoints} onChange={(e) => handleTpPointsChange(e.target.value)} />
+                    </div>
                   </div>
                   <div className={styles.exitsList}>
                     {exits.map((ex, idx) => (
@@ -553,15 +812,20 @@ export default function AddTradePage() {
                   {errors.exits && <span className={styles.errorText} style={{marginTop: "8px"}}>{errors.exits}</span>}
                 </div>
 
+                <div className={styles.field} style={{marginTop: "8px"}}>
+                  <label className={styles.label}>Charges Override ({currencySymbol})</label>
+                  <input type="number" className={styles.input} placeholder={`Auto calculated: ${currencySymbol}${chargesAmount.toFixed(2)}`} value={manualCharges} onChange={(e) => setManualCharges(e.target.value)} />
+                </div>
+
                 <div className={styles.autoCalcBox}>
                   <div className={styles.calcItem}>
                     <span className={styles.calcLabel}>Charges</span>
-                    <span className={styles.calcValue}>₹{chargesAmount.toFixed(2)}</span>
+                    <span className={styles.calcValue}>{currencySymbol}{chargesAmount.toFixed(2)}</span>
                   </div>
                   <div className={styles.calcItem}>
                     <span className={styles.calcLabel}>Net PnL</span>
                     <span className={`${styles.calcValue} ${netPnl > 0 ? styles.profitText : netPnl < 0 ? styles.lossText : ""}`}>
-                      ₹{netPnl.toFixed(2)}
+                      {currencySymbol}{netPnl.toFixed(2)}
                     </span>
                   </div>
                   <div className={styles.calcItem}>
@@ -582,6 +846,7 @@ export default function AddTradePage() {
                     <button type="button" className={styles.addShortcutBtn} onClick={() => goToManage('setups')}>+ Add</button>
                   </div>
                   <select className={styles.input} value={strategy} onChange={(e) => setStrategy(e.target.value)}>
+                    <option value="">Select Strategy</option>
                     {settings.setups.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
@@ -592,6 +857,7 @@ export default function AddTradePage() {
                     <button type="button" className={styles.addShortcutBtn} onClick={() => goToManage('timeFrames')}>+ Add</button>
                   </div>
                   <select className={styles.input} value={timeFrame} onChange={(e) => setTimeFrame(e.target.value)}>
+                    <option value="">Select Time Frame</option>
                     {settings.timeFrames.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
@@ -602,6 +868,7 @@ export default function AddTradePage() {
                     <button type="button" className={styles.addShortcutBtn} onClick={() => goToManage('marketTrends')}>+ Add</button>
                   </div>
                   <select className={styles.input} value={marketTrend} onChange={(e) => setMarketTrend(e.target.value)}>
+                    <option value="">Select Market Condition</option>
                     {settings.marketTrends.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
@@ -612,7 +879,8 @@ export default function AddTradePage() {
                     <button type="button" className={styles.addShortcutBtn} onClick={() => goToManage('sessions')}>+ Add</button>
                   </div>
                   <select className={styles.input} value={session} onChange={(e) => setSession(e.target.value)}>
-                    {settings.sessions.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    <option value="">Select Session</option>
+                    {settings.sessions.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
                   </select>
                 </div>
 
@@ -778,7 +1046,15 @@ export default function AddTradePage() {
                 <button type="button" className={styles.navBtnOutline} onClick={() => setStep(step - 1)}>
                   Back
                 </button>
-              ) : <div></div>}
+              ) : (
+                !editId ? (
+                  <button type="button" className={styles.navBtnOutline} style={{borderColor: "var(--profit-green)", color: "var(--profit-green)"}} onClick={() => { if (validateStep1()) handleSubmit(); }}>
+                    Quick Save
+                  </button>
+                ) : (
+                  <div />
+                )
+              )}
               
               {step < 5 ? (
                 <button type="button" className={styles.navBtnPrimary} onClick={handleNext}>
@@ -786,7 +1062,7 @@ export default function AddTradePage() {
                 </button>
               ) : (
                 <button type="button" className={styles.submitBtn} onClick={handleSubmit}>
-                  Save Trade
+                  {editId ? "Update Trade" : "Save Trade"}
                 </button>
               )}
             </div>

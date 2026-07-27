@@ -131,7 +131,7 @@ export default function JournalPage() {
     }
     
     return result;
-  }, [filter, searchQuery, advFilters]);
+  }, [filter, searchQuery, advFilters, allTrades]);
 
   // Calculate dynamic stats
   const stats = useMemo(() => {
@@ -362,7 +362,7 @@ export default function JournalPage() {
               </div>
 
               <div className={styles.cardRow}>
-                <span className={styles.metaText}>{trade.date} • {trade.time}</span>
+                <span className={styles.metaText}>{formatDateDisplay(trade.date)} • {trade.time}</span>
                 <span className={styles.bookmarkIcon}>
                   {trade.isBookmarked ? (
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--accent-orange)" stroke="var(--accent-orange)" strokeWidth="2">

@@ -1,7 +1,14 @@
+import { API_URL } from "./apiConfig";
+import { getSession } from "next-auth/react";
+
 export const fetchSettings = async () => {
     try {
-        const token = "Bearer 1|6Jz5W4mBp114wk1fmxxjjg3bPNKHBrEsiHjnSEW2c20da63f";
-        const res = await fetch("http://localhost:8000/api/settings", { headers: { "Authorization": token, "Accept": "application/json" } });
+        const session = await getSession();
+        const token = session?.apiToken ? `Bearer ${session.apiToken}` : "Bearer 1|6Jz5W4mBp114wk1fmxxjjg3bPNKHBrEsiHjnSEW2c20da63f";
+        const res = await fetch(`${API_URL}/settings`, { 
+            headers: { "Authorization": token, "Accept": "application/json" },
+            cache: 'no-store'
+        });
         if (!res.ok) throw new Error("Failed to fetch settings");
         return await res.json();
     } catch (e) {
@@ -12,11 +19,18 @@ export const fetchSettings = async () => {
 
 export const fetchAndProcessTrades = async () => {
     try {
-        const token = "Bearer 1|6Jz5W4mBp114wk1fmxxjjg3bPNKHBrEsiHjnSEW2c20da63f"; // Keeping hardcoded for now as it's the current auth method
+        const session = await getSession();
+        const token = session?.apiToken ? `Bearer ${session.apiToken}` : "Bearer 1|6Jz5W4mBp114wk1fmxxjjg3bPNKHBrEsiHjnSEW2c20da63f";
         
         const [settingsRes, tradesRes] = await Promise.all([
-            fetch("http://localhost:8000/api/settings", { headers: { "Authorization": token, "Accept": "application/json" } }),
-            fetch("http://localhost:8000/api/trades", { headers: { "Authorization": token, "Accept": "application/json" } })
+            fetch(`${API_URL}/settings`, { 
+                headers: { "Authorization": token, "Accept": "application/json" },
+                cache: 'no-store'
+            }),
+            fetch(`${API_URL}/trades`, { 
+                headers: { "Authorization": token, "Accept": "application/json" },
+                cache: 'no-store'
+            })
         ]);
 
         if (!settingsRes.ok || !tradesRes.ok) throw new Error("Failed to fetch data");
@@ -74,12 +88,13 @@ export const fetchAndProcessTrades = async () => {
                 ...trade,
                 symbol: symbolName,
                 setup: trade.setup ? trade.setup.name : "",
-                timeframe: trade.timeFrame ? trade.timeFrame.name : "",
-                trend: trade.marketTrend ? trade.marketTrend.name : "",
-                marketType: trade.marketType ? trade.marketType.name : "",
+                timeframe: trade.time_frame ? trade.time_frame.name : "",
+                trend: trade.market_trend ? trade.market_trend.name : "",
+                marketType: trade.market_type ? trade.market_type.name : "",
                 session: trade.session ? trade.session.name : "",
                 mistakes: trade.mistakes ? trade.mistakes.map(m => m.name) : [],
                 rules: trade.rules ? trade.rules.map(r => r.name) : [],
+                images: trade.images ? trade.images.map(img => img.image_path || img) : [],
                 grossPnl,
                 charges,
                 pnl: netPnl,
