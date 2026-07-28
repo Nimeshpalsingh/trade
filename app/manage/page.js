@@ -8,27 +8,16 @@ import styles from "./manage.module.css";
 
 // Initial mock data
 const initialData = {
-  setups: ["Breakout", "Pullback", "Reversal", "Fakeout"],
-  sessions: [
-    { id: "1", name: "Morning", startTime: "09:15", endTime: "11:30" },
-    { id: "2", name: "Afternoon", startTime: "13:00", endTime: "15:30" },
-    { id: "3", name: "Algo", startTime: "09:15", endTime: "15:30" }
-  ],
-  marketTypes: ["Options", "Futures", "Equity", "Forex"],
-  timeFrames: ["1m", "3m", "5m", "15m", "1H", "1D"],
-  symbols: ["NIFTY", "BANKNIFTY", "FINNIFTY", "RELIANCE", "HDFCBANK"],
-  marketTrends: ["Up Trend", "Down Trend", "Sideways", "Not Sure"],
-  breakeven: [
-    { id: "1", symbol: "NIFTY", value: "₹60" },
-    { id: "2", symbol: "RELIANCE", value: "0.03%" },
-  ],
-  mistakes: ["Overtrading", "FOMO", "Early Exit", "Wrong Trade", "No SL", "Revenge Trade", "Chasing", "Position Too Big"],
-  riskLimits: [
-    { id: "1", type: "Daily SL", value: "2000" },
-    { id: "2", type: "Weekly SL", value: "10000" },
-    { id: "3", type: "Monthly SL", value: "40000" },
-  ],
-  rules: ["Liquidity Taken", "BOS", "CHOCH", "HTF Trend", "Volume Confirmed", "RSI Confirmed", "News Checked", "Session Confirmed"],
+  setups: [],
+  sessions: [],
+  marketTypes: [],
+  timeFrames: [],
+  symbols: [],
+  marketTrends: [],
+  breakeven: [],
+  mistakes: [],
+  riskLimits: [],
+  rules: [],
 };
 
 const CATEGORIES = [
