@@ -1,47 +1,71 @@
 import { API_URL, normalizeMediaUrl } from "./apiConfig";
 import { getSession } from "next-auth/react";
 
+let settingsCache = null;
+let settingsCacheTime = 0;
+let settingsPromise = null;
+
 export const fetchSettings = async () => {
-    try {
-        const session = await getSession();
-        if (!session?.apiToken) throw new Error("No session token available");
-        const token = `Bearer ${session.apiToken}`;
-        const res = await fetch(`${API_URL}/settings`, { 
-            headers: { "Authorization": token, "Accept": "application/json" },
-            cache: 'no-store'
-        });
-        if (!res.ok) throw new Error("Failed to fetch settings");
-        return await res.json();
-    } catch (e) {
-        console.error("Error fetching settings:", e);
-        return { symbols: [], setups: [], sessions: [], market_trends: [], timeframes: [], market_types: [], mistakes: [], rules: [] };
+    const now = Date.now();
+    if (settingsCache && (now - settingsCacheTime < 10000)) { // 10-second cache
+        return settingsCache;
     }
-};
+    if (settingsPromise) return settingsPromise;
 
-export const fetchAndProcessTrades = async (existingSettings = null) => {
-    try {
-        const session = await getSession();
-        if (!session?.apiToken) throw new Error("No session token available");
-        const token = `Bearer ${session.apiToken}`;
-        
-        let settingsData = existingSettings;
-
-        if (!settingsData) {
-            const settingsRes = await fetch(`${API_URL}/settings`, { 
+    settingsPromise = (async () => {
+        try {
+            const session = await getSession();
+            if (!session?.apiToken) throw new Error("No session token available");
+            const token = `Bearer ${session.apiToken}`;
+            const res = await fetch(`${API_URL}/settings`, { 
                 headers: { "Authorization": token, "Accept": "application/json" },
                 cache: 'no-store'
             });
-            if (!settingsRes.ok) {
-                console.error("Settings fetch status:", settingsRes.status, settingsRes.statusText);
-                throw new Error(`Failed to fetch settings: ${settingsRes.status}`);
-            }
-            settingsData = await settingsRes.json();
+            if (!res.ok) throw new Error("Failed to fetch settings");
+            const data = await res.json();
+            settingsCache = data;
+            settingsCacheTime = Date.now();
+            settingsPromise = null;
+            return data;
+        } catch (e) {
+            settingsPromise = null;
+            console.error("Error fetching settings:", e);
+            return { symbols: [], setups: [], sessions: [], market_trends: [], timeframes: [], market_types: [], mistakes: [], rules: [] };
         }
-        
-        const tradesRes = await fetch(`${API_URL}/trades`, { 
-            headers: { "Authorization": token, "Accept": "application/json" },
-            cache: 'no-store'
-        });
+    })();
+    return settingsPromise;
+};
+
+let tradesCache = null;
+let tradesCacheTime = 0;
+let tradesPromise = null;
+
+export const fetchAndProcessTrades = async (existingSettings = null) => {
+    const now = Date.now();
+    if (tradesCache && (now - tradesCacheTime < 5000)) { // 5-second cache for trades
+        return tradesCache;
+    }
+    if (tradesPromise) return tradesPromise;
+
+    tradesPromise = (async () => {
+        try {
+            const session = await getSession();
+            if (!session?.apiToken) throw new Error("No session token available");
+            const token = `Bearer ${session.apiToken}`;
+            
+            let settingsData = existingSettings;
+
+            if (!settingsData) {
+                settingsData = await fetchSettings();
+            }
+            
+            // Add a small 200ms delay to prevent hitting WAF limits for simultaneous requests
+            await new Promise(resolve => setTimeout(resolve, 200));
+
+            const tradesRes = await fetch(`${API_URL}/trades`, { 
+                headers: { "Authorization": token, "Accept": "application/json" },
+                cache: 'no-store'
+            });
 
         if (!tradesRes.ok) {
             console.error("Trades fetch status:", tradesRes.status, tradesRes.statusText);
@@ -116,9 +140,15 @@ export const fetchAndProcessTrades = async (existingSettings = null) => {
             };
         });
 
+        tradesCache = processedTrades;
+        tradesCacheTime = Date.now();
+        tradesPromise = null;
         return processedTrades;
     } catch (e) {
+        tradesPromise = null;
         console.error("Error fetching trades:", e);
         return [];
     }
+    })();
+    return tradesPromise;
 };
