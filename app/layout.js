@@ -1,6 +1,7 @@
 import "./globals.css";
 import AuthProvider from "./components/AuthProvider";
 import DisciplineWarning from "./components/DisciplineWarning";
+import GlobalReload from "./components/GlobalReload";
 
 export const metadata = {
   title: "TradeJournal Pro - Smart Trading Analytics",
@@ -19,6 +20,7 @@ export default function RootLayout({ children }) {
         <AuthProvider>
           <DisciplineWarning />
           {children}
+          <GlobalReload />
         </AuthProvider>
       </body>
     </html>
