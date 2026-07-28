@@ -53,26 +53,24 @@
   gap: 12px;
 }
 
-.liveIndicator {
+.headerActionBtn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--profit-green);
-  letter-spacing: 1.5px;
-  padding: 4px 10px;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
   border-radius: var(--radius-full);
-  background: var(--profit-green-bg);
-  border: 1px solid rgba(0, 230, 118, 0.15);
+  background: var(--bg-glass);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.liveDot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--profit-green);
-  animation: pulse 2s ease infinite;
+.headerActionBtn:hover {
+  background: var(--bg-glass-hover);
+  color: var(--accent-blue);
+  border-color: var(--border-medium);
 }
 
 /* ===== MAIN ===== */
