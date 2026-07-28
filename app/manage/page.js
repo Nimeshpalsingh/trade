@@ -66,7 +66,7 @@ export default function ManagePage() {
         const res = await fetch(`${API_URL}/settings`, {
           headers: {
             "Accept": "application/json",
-            "Authorization": apiToken
+            "Authorization": `Bearer ${apiToken}`
           }
         });
         if (res.ok) {
@@ -202,7 +202,7 @@ export default function ManagePage() {
     }
 
     // token removed
-    const headers = { "Content-Type": "application/json", "Authorization": apiToken };
+    const headers = { "Content-Type": "application/json", "Authorization": `Bearer ${apiToken}` };
     
     let endpoint = "";
     if (category === "setups") endpoint = "setups";
@@ -238,7 +238,7 @@ export default function ManagePage() {
 
   const handleSave = async () => {
     // token removed
-    const headers = { "Content-Type": "application/json", "Authorization": apiToken };
+    const headers = { "Content-Type": "application/json", "Authorization": `Bearer ${apiToken}` };
 
     if (activeCategory === "breakeven") {
       if (!bSymbol || !bValue.trim()) return;
