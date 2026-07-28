@@ -1,4 +1,4 @@
-import { API_URL } from "./apiConfig";
+import { API_URL, normalizeMediaUrl } from "./apiConfig";
 import { getSession } from "next-auth/react";
 
 export const fetchSettings = async () => {
@@ -100,7 +100,7 @@ export const fetchAndProcessTrades = async () => {
                 session: trade.session ? trade.session.name : "",
                 mistakes: trade.mistakes ? trade.mistakes.map(m => m.name) : [],
                 rules: trade.rules ? trade.rules.map(r => r.name) : [],
-                images: trade.images ? trade.images.map(img => img.image_path || img) : [],
+                images: trade.images ? trade.images.map(img => normalizeMediaUrl(img.image_path || img)) : [],
                 grossPnl,
                 charges,
                 pnl: netPnl,

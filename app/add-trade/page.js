@@ -1,5 +1,5 @@
 "use client";
-import { API_URL } from "../utils/apiConfig";
+import { API_URL, normalizeMediaUrl } from "../utils/apiConfig";
 import { useState, useEffect, useRef } from "react";
 import { getSession } from "next-auth/react";
 import BottomNav from "../components/BottomNav";
@@ -167,7 +167,7 @@ export default function AddTradePage() {
         }
         
         if (data.images && data.images.length > 0) {
-          setImages(data.images.map(img => img.image_path || img));
+          setImages(data.images.map(img => normalizeMediaUrl(img.image_path || img)));
         }
       }
     } catch (e) {
