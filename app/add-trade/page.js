@@ -610,14 +610,15 @@ export default function AddTradePage() {
                             try {
                               const session = await getSession();
                               if (!session?.apiToken) return;
-                              await fetch(`${API_URL}/settings/defaults`, {
+                              const res = await fetch(`${API_URL}/settings/defaults`, {
                                 method: 'PUT',
                                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.apiToken}` },
                                 body: JSON.stringify({ default_market_type: marketType })
                               });
+                              if (!res.ok) throw new Error("Database error");
                               setDefaultSettings(prev => ({...prev, marketType}));
                               alert(`${marketType} set as default Market Type`);
-                            } catch (e) { alert("Failed to save default"); }
+                            } catch (e) { alert("Failed to save default in database."); }
                           } else {
                             alert("Please select a Market Type first to set as default");
                           }
@@ -653,14 +654,15 @@ export default function AddTradePage() {
                               try {
                                 const session = await getSession();
                                 if (!session?.apiToken) return;
-                                await fetch(`${API_URL}/settings/defaults`, {
+                                const res = await fetch(`${API_URL}/settings/defaults`, {
                                   method: 'PUT',
                                   headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.apiToken}` },
                                   body: JSON.stringify({ default_symbol: symbol })
                                 });
+                                if (!res.ok) throw new Error("Database error");
                                 setDefaultSettings(prev => ({...prev, symbol}));
                                 alert(`${symbol} set as default Symbol`);
-                              } catch (e) { alert("Failed to save default"); }
+                              } catch (e) { alert("Failed to save default in database."); }
                             } else {
                               alert("Please select a Symbol first to set as default");
                             }
