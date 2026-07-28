@@ -633,7 +633,11 @@ export default function AddTradePage() {
                   </div>
                   <select className={`${styles.input} ${errors.marketType ? styles.inputError : ""}`} value={marketType} onChange={(e) => { setMarketType(e.target.value); setErrors(prev => ({...prev, marketType: null})); }}>
                     <option value="">Select Market Type</option>
-                    {settings.marketTypes && settings.marketTypes.map((s, idx) => <option key={`${s}-${idx}`} value={s}>{s}</option>)}
+                    {settings.marketTypes && settings.marketTypes.map((s, idx) => (
+                      <option key={`${s}-${idx}`} value={s}>
+                        {s === defaultSettings.marketType ? `⭐ ${s}` : s}
+                      </option>
+                    ))}
                   </select>
                   {errors.marketType && <span className={styles.errorText}>{errors.marketType}</span>}
                 </div>
@@ -677,7 +681,11 @@ export default function AddTradePage() {
                     </div>
                     <select className={`${styles.input} ${errors.symbol ? styles.inputError : ""}`} value={symbol} onChange={(e) => handleSymbolChange(e.target.value)}>
                       <option value="">Select Symbol</option>
-                      {filteredSymbols.map((s, idx) => <option key={`${s}-${idx}`} value={s}>{s}</option>)}
+                      {filteredSymbols.map((s, idx) => (
+                        <option key={`${s}-${idx}`} value={s}>
+                          {s === defaultSettings.symbol ? `⭐ ${s}` : s}
+                        </option>
+                      ))}
                     </select>
                     {errors.symbol && <span className={styles.errorText}>{errors.symbol}</span>}
                   </div>
