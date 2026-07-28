@@ -21,6 +21,7 @@ export default function AddTradePage() {
   });
   const [rawSymbols, setRawSymbols] = useState([]);
   const [editId, setEditId] = useState(null);
+  const [defaultSettings, setDefaultSettings] = useState({ marketType: "", symbol: "" });
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -49,16 +50,21 @@ export default function AddTradePage() {
             breakeven: data.symbols.filter(s => s.breakeven_value).map(s => ({ id: s.id.toString(), symbol: s.name, value: s.breakeven_value }))
           });
 
-          // Pre-populate riskAmount and step_size if default symbol has them
-          if (typeof window !== "undefined") {
-             const defSymStr = localStorage.getItem("defaultSymbol");
-             if (defSymStr) {
-               const foundSym = data.symbols.find(s => s.name.trim() === defSymStr);
-               if (foundSym) {
-                 if (foundSym.default_risk) setRiskAmount(foundSym.default_risk);
-                 if (foundSym.step_size) setSlStepSize(parseFloat(foundSym.step_size) || 0.01);
-               }
-             }
+          if (data.defaults) {
+            const defMt = data.defaults.default_market_type || "";
+            const defSym = data.defaults.default_symbol || "";
+            setDefaultSettings({ marketType: defMt, symbol: defSym });
+
+            if (defMt && !editId) setMarketType(defMt);
+            if (defSym && !editId) {
+              setSymbol(defSym);
+              // Set defaults for symbol
+              const foundSym = data.symbols.find(s => s.name.trim() === defSym);
+              if (foundSym) {
+                if (foundSym.default_risk) setRiskAmount(foundSym.default_risk);
+                if (foundSym.step_size) setSlStepSize(parseFloat(foundSym.step_size) || 0.01);
+              }
+            }
           }
         }
       } catch (e) {
@@ -89,14 +95,6 @@ export default function AddTradePage() {
       if (id) {
         setEditId(id);
         fetchTradeForEdit(id);
-      } else {
-        const defMt = localStorage.getItem("defaultMarketType");
-        if (defMt && settings.marketTypes.includes(defMt) && !editId) {
-          setMarketType(defMt);
-        }
-
-        const defSym = localStorage.getItem("defaultSymbol");
-        if (defSym) setSymbol(defSym);
       }
     }
   }, []);
@@ -607,15 +605,24 @@ export default function AddTradePage() {
                     <div style={{ display: 'flex', alignItems: 'center' }}>
                       <button 
                         type="button" 
-                        onClick={() => {
+                        onClick={async () => {
                           if (marketType) {
-                            localStorage.setItem("defaultMarketType", marketType);
-                            alert(`${marketType} set as default Market Type`);
+                            try {
+                              const session = await getSession();
+                              if (!session?.apiToken) return;
+                              await fetch(`${API_URL}/settings/defaults`, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.apiToken}` },
+                                body: JSON.stringify({ default_market_type: marketType })
+                              });
+                              setDefaultSettings(prev => ({...prev, marketType}));
+                              alert(`${marketType} set as default Market Type`);
+                            } catch (e) { alert("Failed to save default"); }
                           } else {
                             alert("Please select a Market Type first to set as default");
                           }
                         }}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 8px', color: '#fbbf24', fontSize: '16px' }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 8px', color: defaultSettings.marketType === marketType && marketType ? '#fbbf24' : 'var(--text-muted)', fontSize: '16px' }}
                         title="Set as Default"
                       >
                         ⭐
@@ -641,15 +648,24 @@ export default function AddTradePage() {
                       <div style={{ display: 'flex', alignItems: 'center' }}>
                         <button 
                           type="button" 
-                          onClick={() => {
+                          onClick={async () => {
                             if (symbol) {
-                              localStorage.setItem("defaultSymbol", symbol);
-                              alert(`${symbol} set as default Symbol`);
+                              try {
+                                const session = await getSession();
+                                if (!session?.apiToken) return;
+                                await fetch(`${API_URL}/settings/defaults`, {
+                                  method: 'PUT',
+                                  headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.apiToken}` },
+                                  body: JSON.stringify({ default_symbol: symbol })
+                                });
+                                setDefaultSettings(prev => ({...prev, symbol}));
+                                alert(`${symbol} set as default Symbol`);
+                              } catch (e) { alert("Failed to save default"); }
                             } else {
                               alert("Please select a Symbol first to set as default");
                             }
                           }}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 8px', color: '#fbbf24', fontSize: '16px' }}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 8px', color: defaultSettings.symbol === symbol && symbol ? '#fbbf24' : 'var(--text-muted)', fontSize: '16px' }}
                           title="Set as Default"
                         >
                           ⭐
