@@ -867,9 +867,25 @@ export default function AddTradePage() {
                       </div>
                     ))}
                   </div>
-                  <button type="button" className={styles.addExitBtn} onClick={addExit}>
-                    + Add Partial Exit
-                  </button>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <button type="button" className={styles.addExitBtn} onClick={addExit}>
+                      + Add Partial Exit
+                    </button>
+                    <button 
+                      type="button" 
+                      className={styles.addExitBtn} 
+                      style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid #ef4444' }}
+                      onClick={() => {
+                        if (!sl) {
+                          alert("Please set Stop Loss Price first");
+                          return;
+                        }
+                        setExits([{ qty: qty, price: sl }]);
+                      }}
+                    >
+                      SL Hit
+                    </button>
+                  </div>
                   {errors.exits && <span className={styles.errorText} style={{marginTop: "8px"}}>{errors.exits}</span>}
                 </div>
 
