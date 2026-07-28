@@ -316,6 +316,11 @@ export default function ManagePage() {
         return;
       }
       
+      if (activeCategory === "symbols" && !symbolMarketType) {
+        showToast("Please select a Market Type for this Symbol!");
+        return;
+      }
+      
       if (formState.mode === "ADD") {
         let endpoint = "";
         if (activeCategory === "setups") endpoint = "setups";
@@ -328,10 +333,14 @@ export default function ManagePage() {
 
         if (endpoint) {
           const bodyData = { name: inputValue.trim() };
-          if (activeCategory === "symbols" && symbolMarketType) {
+          if (activeCategory === "symbols") {
             bodyData.market_type = symbolMarketType;
           }
-          await fetch(`${API_URL}/settings/${endpoint}`, { method: "POST", headers, body: JSON.stringify(bodyData) });
+          const res = await fetch(`${API_URL}/settings/${endpoint}`, { method: "POST", headers, body: JSON.stringify(bodyData) });
+          if (!res.ok) {
+            showToast("Failed to save item to database.");
+            return;
+          }
         }
 
         setData((prev) => ({
@@ -490,13 +499,13 @@ export default function ManagePage() {
                     />
                   </div>
                   <div className={styles.formGroup}>
-                    <label className={styles.formLabel}>Link to Market Type (Optional)</label>
+                    <label className={styles.formLabel}>Link to Market Type (Required)</label>
                     <select 
                       className={styles.formInput} 
                       value={symbolMarketType}
                       onChange={(e) => setSymbolMarketType(e.target.value)}
                     >
-                      <option value="">None / All Market Types</option>
+                      <option value="">Select Market Type</option>
                       {data.marketTypes.map(mt => <option key={mt} value={mt}>{mt}</option>)}
                     </select>
                   </div>
