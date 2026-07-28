@@ -95,6 +95,7 @@ export default function ManagePage() {
 
   // Form input states (Simple string)
   const [inputValue, setInputValue] = useState("");
+  const [symbolMarketType, setSymbolMarketType] = useState("");
   
   // Form input states (Breakeven)
   const [bSymbol, setBSymbol] = useState("");
@@ -126,6 +127,7 @@ export default function ManagePage() {
 
   const openAddForm = () => {
     setInputValue("");
+    setSymbolMarketType("");
     setBSymbol(data.symbols.length > 0 ? data.symbols[0] : ""); // Default to first symbol
     setBValue("");
     setSName("");
@@ -325,7 +327,11 @@ export default function ManagePage() {
         else if (activeCategory === "rules") endpoint = "rules";
 
         if (endpoint) {
-          await fetch(`${API_URL}/settings/${endpoint}`, { method: "POST", headers, body: JSON.stringify({ name: inputValue.trim() }) });
+          const bodyData = { name: inputValue.trim() };
+          if (activeCategory === "symbols" && symbolMarketType) {
+            bodyData.market_type = symbolMarketType;
+          }
+          await fetch(`${API_URL}/settings/${endpoint}`, { method: "POST", headers, body: JSON.stringify(bodyData) });
         }
 
         setData((prev) => ({
@@ -468,6 +474,31 @@ export default function ManagePage() {
                       value={rValue}
                       onChange={(e) => setRValue(e.target.value)}
                     />
+                  </div>
+                </>
+              ) : activeCategory === "symbols" ? (
+                <>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Symbol Name</label>
+                    <input 
+                      type="text" 
+                      className={styles.formInput} 
+                      placeholder="e.g. NIFTY"
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value.replace(/\s/g, '').toUpperCase())}
+                      autoFocus
+                    />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Link to Market Type (Optional)</label>
+                    <select 
+                      className={styles.formInput} 
+                      value={symbolMarketType}
+                      onChange={(e) => setSymbolMarketType(e.target.value)}
+                    >
+                      <option value="">None / All Market Types</option>
+                      {data.marketTypes.map(mt => <option key={mt} value={mt}>{mt}</option>)}
+                    </select>
                   </div>
                 </>
               ) : (

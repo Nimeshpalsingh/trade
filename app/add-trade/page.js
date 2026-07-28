@@ -91,8 +91,10 @@ export default function AddTradePage() {
         fetchTradeForEdit(id);
       } else {
         const defMt = localStorage.getItem("defaultMarketType");
-        if (defMt) setMarketType(defMt);
-        
+        if (defMt && settings.marketTypes.includes(defMt) && !editId) {
+          setMarketType(defMt);
+        }
+
         const defSym = localStorage.getItem("defaultSymbol");
         if (defSym) setSymbol(defSym);
       }
@@ -370,9 +372,13 @@ export default function AddTradePage() {
     setSymbol(val);
     setErrors(prev => ({...prev, symbol: null}));
     
-    // Check for default risk amount and step size
+    // Check for default risk amount, step size, and market type
     const foundSym = rawSymbols.find(s => s.name.trim() === val);
     if (foundSym) {
+      if (foundSym.market_type) {
+        setMarketType(foundSym.market_type);
+        setErrors(prev => ({...prev, marketType: null}));
+      }
       if (foundSym.default_risk) {
         setRiskAmount(foundSym.default_risk);
         calculateSmart("riskAmount", foundSym.default_risk, exits);
@@ -598,7 +604,24 @@ export default function AddTradePage() {
                 <div className={styles.field}>
                   <div className={styles.labelRow}>
                     <label className={styles.label}>Market Type</label>
-                    <button type="button" className={styles.addShortcutBtn} onClick={() => goToManage('marketTypes')}>+ Add</button>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          if (marketType) {
+                            localStorage.setItem("defaultMarketType", marketType);
+                            alert(`${marketType} set as default Market Type`);
+                          } else {
+                            alert("Please select a Market Type first to set as default");
+                          }
+                        }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 8px', color: '#fbbf24', fontSize: '16px' }}
+                        title="Set as Default"
+                      >
+                        ⭐
+                      </button>
+                      <button type="button" className={styles.addShortcutBtn} onClick={() => goToManage('marketTypes')}>+ Add</button>
+                    </div>
                   </div>
                   <select className={`${styles.input} ${errors.marketType ? styles.inputError : ""}`} value={marketType} onChange={(e) => { setMarketType(e.target.value); setErrors(prev => ({...prev, marketType: null})); }}>
                     <option value="">Select Market Type</option>
@@ -615,7 +638,24 @@ export default function AddTradePage() {
                   <div className={styles.field}>
                     <div className={styles.labelRow}>
                       <label className={styles.label}>Symbol</label>
-                      <button type="button" className={styles.addShortcutBtn} onClick={() => goToManage('symbols')}>+ Add</button>
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <button 
+                          type="button" 
+                          onClick={() => {
+                            if (symbol) {
+                              localStorage.setItem("defaultSymbol", symbol);
+                              alert(`${symbol} set as default Symbol`);
+                            } else {
+                              alert("Please select a Symbol first to set as default");
+                            }
+                          }}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 8px', color: '#fbbf24', fontSize: '16px' }}
+                          title="Set as Default"
+                        >
+                          ⭐
+                        </button>
+                        <button type="button" className={styles.addShortcutBtn} onClick={() => goToManage('symbols')}>+ Add</button>
+                      </div>
                     </div>
                     <select className={`${styles.input} ${errors.symbol ? styles.inputError : ""}`} value={symbol} onChange={(e) => handleSymbolChange(e.target.value)}>
                       <option value="">Select Symbol</option>
