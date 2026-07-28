@@ -40,6 +40,7 @@ export default function ManagePage() {
   const [data, setData] = useState(initialData);
   const [rawSymbols, setRawSymbols] = useState([]);
   const [activeCategory, setActiveCategory] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   
   // formState: null | { mode: 'ADD' | 'EDIT', item: any, originalId?: string }
   const [formState, setFormState] = useState(null);
@@ -79,6 +80,8 @@ export default function ManagePage() {
         }
       } catch (e) {
         console.error("Failed to fetch settings", e);
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchSettings();
@@ -760,7 +763,14 @@ export default function ManagePage() {
 
       {/* Main Content Area */}
       <main className={styles.main}>
-        <div className={`${styles.menuList} glass-card`}>
+        {isLoading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
+            <div className={styles.spinner} style={{ marginBottom: '16px', border: '3px solid rgba(255,255,255,0.1)', borderTopColor: 'var(--accent-blue)', borderRadius: '50%', width: '32px', height: '32px', animation: 'spin 1s linear infinite' }}></div>
+            <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+            <div>Loading data...</div>
+          </div>
+        ) : (
+          <div className={`${styles.menuList} glass-card`}>
           {CATEGORIES.map((cat, index) => (
             <div 
               key={cat.id} 
@@ -781,6 +791,7 @@ export default function ManagePage() {
             </div>
           ))}
         </div>
+        )}
 
         {/* Logout Button */}
         <div style={{ marginTop: "24px", padding: "0 16px" }}>

@@ -22,6 +22,7 @@ export default function AddTradePage() {
   const [rawSymbols, setRawSymbols] = useState([]);
   const [editId, setEditId] = useState(null);
   const [defaultSettings, setDefaultSettings] = useState({ marketType: "", symbol: "" });
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -69,6 +70,10 @@ export default function AddTradePage() {
         }
       } catch (e) {
         console.error("Failed to fetch settings", e);
+      } finally {
+        if (typeof window !== "undefined" && !window.location.search.includes('edit')) {
+          setIsLoading(false);
+        }
       }
     };
     fetchSettings();
@@ -174,6 +179,8 @@ export default function AddTradePage() {
       }
     } catch (e) {
       console.error("Failed to fetch trade", e);
+    } finally {
+      setIsLoading(false);
     }
   };
   const [qty, setQty] = useState("");
@@ -585,7 +592,13 @@ export default function AddTradePage() {
       </header>
 
       <main className={styles.main}>
-        {submitted ? (
+        {isLoading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
+            <div className={styles.spinner} style={{ marginBottom: '16px', border: '3px solid rgba(255,255,255,0.1)', borderTopColor: 'var(--accent-blue)', borderRadius: '50%', width: '32px', height: '32px', animation: 'spin 1s linear infinite' }}></div>
+            <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+            <div>Loading data...</div>
+          </div>
+        ) : submitted ? (
           <div className={styles.successBanner}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--profit-green)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />

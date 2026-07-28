@@ -262,7 +262,11 @@ export default function PnlPage() {
 
       <main className={styles.main}>
         {isLoading ? (
-          <div style={{ textAlign: "center", padding: "40px", color: "var(--text-muted)" }}>Loading P&L data...</div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
+            <div className={styles.spinner} style={{ marginBottom: '16px', border: '3px solid rgba(255,255,255,0.1)', borderTopColor: 'var(--accent-blue)', borderRadius: '50%', width: '32px', height: '32px', animation: 'spin 1s linear infinite' }}></div>
+            <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+            <div>Loading P&L data...</div>
+          </div>
         ) : (
           <>
         {/* Zerodha-Style 1-Line Summary Strip */}
