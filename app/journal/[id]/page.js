@@ -54,7 +54,8 @@ export default function TradeDetailsPage() {
     if (confirm("Are you sure you want to delete this trade?")) {
       try {
         const session = await getSession();
-        const token = session?.apiToken ? `Bearer ${session.apiToken}` : "Bearer 1|6Jz5W4mBp114wk1fmxxjjg3bPNKHBrEsiHjnSEW2c20da63f";
+        if (!session?.apiToken) { alert("Not authenticated"); return; }
+        const token = `Bearer ${session.apiToken}`;
         const res = await fetch(`${API_URL}/trades/${trade.id}`, {
           method: "DELETE",
           headers: {

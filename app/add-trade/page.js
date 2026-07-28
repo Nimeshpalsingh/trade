@@ -26,7 +26,8 @@ export default function AddTradePage() {
     const fetchSettings = async () => {
       try {
         const session = await getSession();
-        const token = session?.apiToken ? `Bearer ${session.apiToken}` : "Bearer 1|6Jz5W4mBp114wk1fmxxjjg3bPNKHBrEsiHjnSEW2c20da63f";
+        if (!session?.apiToken) return;
+        const token = `Bearer ${session.apiToken}`;
         const res = await fetch(`${API_URL}/settings`, {
           headers: {
             "Accept": "application/json",
@@ -101,7 +102,8 @@ export default function AddTradePage() {
   const fetchTradeForEdit = async (id) => {
     try {
       const session = await getSession();
-      const token = session?.apiToken ? `Bearer ${session.apiToken}` : "Bearer 1|6Jz5W4mBp114wk1fmxxjjg3bPNKHBrEsiHjnSEW2c20da63f";
+      if (!session?.apiToken) return;
+      const token = `Bearer ${session.apiToken}`;
       const res = await fetch(`${API_URL}/trades/${id}`, {
         headers: {
           "Accept": "application/json",
@@ -533,7 +535,8 @@ export default function AddTradePage() {
       const url = editId ? `${API_URL}/trades/${editId}` : `${API_URL}/trades`;
 
       const authSession = await getSession();
-      const token = authSession?.apiToken ? `Bearer ${authSession.apiToken}` : "Bearer 1|6Jz5W4mBp114wk1fmxxjjg3bPNKHBrEsiHjnSEW2c20da63f";
+      if (!authSession?.apiToken) throw new Error("Not authenticated");
+      const token = `Bearer ${authSession.apiToken}`;
       const res = await fetch(url, {
         method: method,
         headers: {

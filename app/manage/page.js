@@ -47,7 +47,7 @@ const CATEGORIES = [
 export default function ManagePage() {
   const router = useRouter();
   const { data: session } = useSession();
-  const apiToken = session?.apiToken ? `Bearer ${session.apiToken}` : "Bearer 1|6Jz5W4mBp114wk1fmxxjjg3bPNKHBrEsiHjnSEW2c20da63f";
+  const apiToken = session?.apiToken;
   const [data, setData] = useState(initialData);
   const [activeCategory, setActiveCategory] = useState(null);
   
@@ -62,6 +62,7 @@ export default function ManagePage() {
 
   useEffect(() => {
     const fetchSettings = async () => {
+      if (!apiToken) return;
       try {
         const res = await fetch(`${API_URL}/settings`, {
           headers: {
