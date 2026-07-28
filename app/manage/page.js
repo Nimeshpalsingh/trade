@@ -38,6 +38,7 @@ export default function ManagePage() {
   const { data: session } = useSession();
   const apiToken = session?.apiToken;
   const [data, setData] = useState(initialData);
+  const [rawSymbols, setRawSymbols] = useState([]);
   const [activeCategory, setActiveCategory] = useState(null);
   
   // formState: null | { mode: 'ADD' | 'EDIT', item: any, originalId?: string }
@@ -61,6 +62,7 @@ export default function ManagePage() {
         });
         if (res.ok) {
           const apiData = await res.json();
+          setRawSymbols(apiData.symbols || []);
           setData(prev => ({
             ...prev,
             setups: [...new Set(apiData.setups.map(s => s.name.trim()))],
@@ -96,6 +98,7 @@ export default function ManagePage() {
   // Form input states (Simple string)
   const [inputValue, setInputValue] = useState("");
   const [symbolMarketType, setSymbolMarketType] = useState("");
+  const [symbolRisk, setSymbolRisk] = useState("");
   
   // Form input states (Breakeven)
   const [bSymbol, setBSymbol] = useState("");
@@ -128,6 +131,7 @@ export default function ManagePage() {
   const openAddForm = () => {
     setInputValue("");
     setSymbolMarketType("");
+    setSymbolRisk("");
     setBSymbol(data.symbols.length > 0 ? data.symbols[0] : ""); // Default to first symbol
     setBValue("");
     setSName("");
@@ -154,6 +158,16 @@ export default function ManagePage() {
       setFormState({ mode: "EDIT", item, originalId: item.id });
     } else {
       setInputValue(item);
+      if (activeCategory === "symbols") {
+        const foundSym = rawSymbols.find(s => s.name === item);
+        if (foundSym) {
+          setSymbolMarketType(foundSym.market_type || "");
+          setSymbolRisk(foundSym.default_risk || "");
+        } else {
+          setSymbolMarketType("");
+          setSymbolRisk("");
+        }
+      }
       setFormState({ mode: "EDIT", item, originalId: item });
     }
   };
@@ -335,11 +349,16 @@ export default function ManagePage() {
           const bodyData = { name: inputValue.trim() };
           if (activeCategory === "symbols") {
             bodyData.market_type = symbolMarketType;
+            if (symbolRisk) bodyData.default_risk = symbolRisk;
           }
           const res = await fetch(`${API_URL}/settings/${endpoint}`, { method: "POST", headers, body: JSON.stringify(bodyData) });
           if (!res.ok) {
             showToast("Failed to save item to database.");
             return;
+          }
+          if (activeCategory === "symbols") {
+              const resData = await res.json();
+              setRawSymbols(prev => [...prev, resData]);
           }
         }
 
@@ -358,7 +377,20 @@ export default function ManagePage() {
         else if (activeCategory === "rules") endpoint = "rules";
 
         if (endpoint) {
-          await fetch(`${API_URL}/settings/${endpoint}`, { method: "PUT", headers, body: JSON.stringify({ old_name: formState.originalId, new_name: inputValue.trim() }) });
+          const bodyData = { old_name: formState.originalId, new_name: inputValue.trim() };
+          if (activeCategory === "symbols") {
+            bodyData.market_type = symbolMarketType;
+            if (symbolRisk) bodyData.default_risk = symbolRisk;
+          }
+          const res = await fetch(`${API_URL}/settings/${endpoint}`, { method: "PUT", headers, body: JSON.stringify(bodyData) });
+          if (!res.ok) {
+            showToast("Failed to update item in database.");
+            return;
+          }
+          if (activeCategory === "symbols") {
+              const resData = await res.json();
+              setRawSymbols(prev => prev.map(s => s.name === formState.originalId ? resData : s));
+          }
         }
 
         setData((prev) => ({
@@ -508,6 +540,16 @@ export default function ManagePage() {
                       <option value="">Select Market Type</option>
                       {data.marketTypes.map(mt => <option key={mt} value={mt}>{mt}</option>)}
                     </select>
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Risk per Trade (Optional)</label>
+                    <input 
+                      type="number" 
+                      className={styles.formInput} 
+                      placeholder="e.g. 500" 
+                      value={symbolRisk}
+                      onChange={(e) => setSymbolRisk(e.target.value)}
+                    />
                   </div>
                 </>
               ) : (
