@@ -1,5 +1,6 @@
 "use client";
 import { useState, useMemo, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import BottomNav from "./components/BottomNav";
 import PnlChart from "./components/PnlChart";
@@ -202,6 +203,8 @@ const mistakeColors = {
 
 export default function Dashboard() {
   const router = useRouter();
+  const { data: session } = useSession();
+  const userName = session?.user?.name ? session.user.name.split(' ')[0] : "Trader";
   const period = "1m"; // Fixed to This Month
 
   const [allTrades, setAllTrades] = useState([]);
@@ -257,8 +260,8 @@ export default function Dashboard() {
             </svg>
           </div>
           <div>
-            <h1 className={styles.headerTitle}>TradeJournal</h1>
-            <p className={styles.headerSubtitle}>Pro Dashboard</p>
+            <h1 className={styles.headerTitle}>Hey {userName} 👋</h1>
+            <p className={styles.headerSubtitle}>Welcome back</p>
           </div>
         </div>
         <div className={styles.headerRight}>

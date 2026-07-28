@@ -2,7 +2,7 @@
 import { API_URL } from "../utils/apiConfig";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { signOut } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import BottomNav from "../components/BottomNav";
 import styles from "./manage.module.css";
 
@@ -46,6 +46,8 @@ const CATEGORIES = [
 
 export default function ManagePage() {
   const router = useRouter();
+  const { data: session } = useSession();
+  const apiToken = session?.apiToken ? `Bearer ${session.apiToken}` : "Bearer 1|6Jz5W4mBp114wk1fmxxjjg3bPNKHBrEsiHjnSEW2c20da63f";
   const [data, setData] = useState(initialData);
   const [activeCategory, setActiveCategory] = useState(null);
   
@@ -64,7 +66,7 @@ export default function ManagePage() {
         const res = await fetch(`${API_URL}/settings`, {
           headers: {
             "Accept": "application/json",
-            "Authorization": "Bearer 1|6Jz5W4mBp114wk1fmxxjjg3bPNKHBrEsiHjnSEW2c20da63f"
+            "Authorization": apiToken
           }
         });
         if (res.ok) {
@@ -88,7 +90,7 @@ export default function ManagePage() {
       }
     };
     fetchSettings();
-  }, []);
+  }, [apiToken]);
 
   // Auto-open category if navigating from another page (e.g. Add Trade shortcuts)
   useEffect(() => {
@@ -199,8 +201,8 @@ export default function ManagePage() {
       return;
     }
 
-    const token = "1|6Jz5W4mBp114wk1fmxxjjg3bPNKHBrEsiHjnSEW2c20da63f";
-    const headers = { "Content-Type": "application/json", "Authorization": `Bearer ${token}` };
+    // token removed
+    const headers = { "Content-Type": "application/json", "Authorization": apiToken };
     
     let endpoint = "";
     if (category === "setups") endpoint = "setups";
@@ -235,8 +237,8 @@ export default function ManagePage() {
   };
 
   const handleSave = async () => {
-    const token = "1|6Jz5W4mBp114wk1fmxxjjg3bPNKHBrEsiHjnSEW2c20da63f";
-    const headers = { "Content-Type": "application/json", "Authorization": `Bearer ${token}` };
+    // token removed
+    const headers = { "Content-Type": "application/json", "Authorization": apiToken };
 
     if (activeCategory === "breakeven") {
       if (!bSymbol || !bValue.trim()) return;

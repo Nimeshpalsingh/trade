@@ -4,7 +4,8 @@ import { getSession } from "next-auth/react";
 export const fetchSettings = async () => {
     try {
         const session = await getSession();
-        const token = session?.apiToken ? `Bearer ${session.apiToken}` : "Bearer 1|6Jz5W4mBp114wk1fmxxjjg3bPNKHBrEsiHjnSEW2c20da63f";
+        if (!session?.apiToken) throw new Error("No session token available");
+        const token = `Bearer ${session.apiToken}`;
         const res = await fetch(`${API_URL}/settings`, { 
             headers: { "Authorization": token, "Accept": "application/json" },
             cache: 'no-store'
@@ -20,7 +21,8 @@ export const fetchSettings = async () => {
 export const fetchAndProcessTrades = async () => {
     try {
         const session = await getSession();
-        const token = session?.apiToken ? `Bearer ${session.apiToken}` : "Bearer 1|6Jz5W4mBp114wk1fmxxjjg3bPNKHBrEsiHjnSEW2c20da63f";
+        if (!session?.apiToken) throw new Error("No session token available");
+        const token = `Bearer ${session.apiToken}`;
         
         const [settingsRes, tradesRes] = await Promise.all([
             fetch(`${API_URL}/settings`, { 
@@ -33,7 +35,11 @@ export const fetchAndProcessTrades = async () => {
             })
         ]);
 
-        if (!settingsRes.ok || !tradesRes.ok) throw new Error("Failed to fetch data");
+        if (!settingsRes.ok || !tradesRes.ok) {
+            console.error("Settings fetch status:", settingsRes.status, settingsRes.statusText);
+            console.error("Trades fetch status:", tradesRes.status, tradesRes.statusText);
+            throw new Error(`Failed to fetch data: Settings ${settingsRes.status}, Trades ${tradesRes.status}`);
+        }
 
         const data = await settingsRes.json();
         const breakevenRules = data.symbols.filter(s => s.breakeven_value).map(s => ({ symbol: s.name, value: s.breakeven_value }));
