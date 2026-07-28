@@ -5,19 +5,20 @@ export const normalizeMediaUrl = (url) => {
     if (!url) return url;
     if (typeof url !== 'string') return url;
     
-    // If it's already a full HTTP URL, check if we need to proxy the storage part
+    // If it's already an absolute URL, return as is
     if (url.startsWith('http')) {
-        if (url.includes('/storage/')) {
-            return '/storage/' + url.split('/storage/')[1];
-        }
         return url;
     }
     
-    // If it doesn't start with /storage/ or http, but it's an image path
-    if (url.startsWith('trade_images/') || url.startsWith('storage/')) {
-        return url.startsWith('storage/') ? '/' + url : '/storage/' + url;
+    // Format path correctly
+    let path = url;
+    if (path.startsWith('trade_images/')) {
+        path = 'storage/' + path;
+    }
+    if (!path.startsWith('/')) {
+        path = '/' + path;
     }
     
-    // Ensure it has a leading slash
-    return url.startsWith('/') ? url : '/' + url;
+    // Combine with BASE_URL to fetch directly from backend server (bypassing Vercel proxy)
+    return `${BASE_URL}${path}`;
 };
