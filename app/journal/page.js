@@ -58,10 +58,8 @@ export default function JournalPage() {
   useEffect(() => {
     const fetchTrades = async () => {
       try {
-        const [trades, settings] = await Promise.all([
-          fetchAndProcessTrades(),
-          fetchSettings()
-        ]);
+        const settings = await fetchSettings();
+        const trades = await fetchAndProcessTrades(settings);
         setDbSettings(settings);
         const formatted = trades.map(t => {
           const hasExits = t.exits && t.exits.length > 0;

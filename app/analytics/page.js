@@ -44,10 +44,8 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     const loadData = async () => {
-      const [data, settings] = await Promise.all([
-        fetchAndProcessTrades(),
-        fetchSettings()
-      ]);
+      const settings = await fetchSettings();
+      const data = await fetchAndProcessTrades(settings);
       setAllTrades(data);
       setDbSettings(settings);
       setIsLoading(false);

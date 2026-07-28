@@ -18,31 +18,37 @@ export const fetchSettings = async () => {
     }
 };
 
-export const fetchAndProcessTrades = async () => {
+export const fetchAndProcessTrades = async (existingSettings = null) => {
     try {
         const session = await getSession();
         if (!session?.apiToken) throw new Error("No session token available");
         const token = `Bearer ${session.apiToken}`;
         
-        const [settingsRes, tradesRes] = await Promise.all([
-            fetch(`${API_URL}/settings`, { 
-                headers: { "Authorization": token, "Accept": "application/json" },
-                cache: 'no-store'
-            }),
-            fetch(`${API_URL}/trades`, { 
-                headers: { "Authorization": token, "Accept": "application/json" },
-                cache: 'no-store'
-            })
-        ]);
+        let settingsData = existingSettings;
 
-        if (!settingsRes.ok || !tradesRes.ok) {
-            console.error("Settings fetch status:", settingsRes.status, settingsRes.statusText);
+        if (!settingsData) {
+            const settingsRes = await fetch(`${API_URL}/settings`, { 
+                headers: { "Authorization": token, "Accept": "application/json" },
+                cache: 'no-store'
+            });
+            if (!settingsRes.ok) {
+                console.error("Settings fetch status:", settingsRes.status, settingsRes.statusText);
+                throw new Error(`Failed to fetch settings: ${settingsRes.status}`);
+            }
+            settingsData = await settingsRes.json();
+        }
+        
+        const tradesRes = await fetch(`${API_URL}/trades`, { 
+            headers: { "Authorization": token, "Accept": "application/json" },
+            cache: 'no-store'
+        });
+
+        if (!tradesRes.ok) {
             console.error("Trades fetch status:", tradesRes.status, tradesRes.statusText);
-            throw new Error(`Failed to fetch data: Settings ${settingsRes.status}, Trades ${tradesRes.status}`);
+            throw new Error(`Failed to fetch trades: ${tradesRes.status}`);
         }
 
-        const data = await settingsRes.json();
-        const breakevenRules = data.symbols.filter(s => s.breakeven_value).map(s => ({ symbol: s.name, value: s.breakeven_value }));
+        const breakevenRules = settingsData.symbols.filter(s => s.breakeven_value).map(s => ({ symbol: s.name, value: s.breakeven_value }));
         const rawTrades = await tradesRes.json();
 
         const processedTrades = rawTrades.map(trade => {
