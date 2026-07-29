@@ -13,13 +13,15 @@ export default function AddTradePage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
   
   const [settings, setSettings] = useState({
     setups: [], sessions: [], timeFrames: [], symbols: [], 
-    marketTrends: [], marketTypes: [], breakeven: [], mistakes: [], rules: []
+    marketTrends: [], marketTypes: [], breakeven: [], mistakes: [], rules: [], preMarketMoods: []
   });
   const [rawSymbols, setRawSymbols] = useState([]);
+  const [rawTimeFrames, setRawTimeFrames] = useState([]);
   const [editId, setEditId] = useState(null);
   const [defaultSettings, setDefaultSettings] = useState({ marketType: "", symbol: "" });
   const [isLoading, setIsLoading] = useState(true);
@@ -39,15 +41,17 @@ export default function AddTradePage() {
         if (res.ok) {
           const data = await res.json();
           setRawSymbols(data.symbols || []);
+          setRawTimeFrames(data.timeFrames || []);
           setSettings({
             setups: [...new Set(data.setups.map(s => s.name.trim()))],
-            sessions: data.sessions.map(s => ({ id: s.id.toString(), name: s.name.trim(), startTime: s.start_time, endTime: s.end_time })),
+            sessions: data.sessions.map(s => ({ id: s.id.toString(), name: s.name.trim(), startTime: s.start_time, endTime: s.end_time, marketType: s.market_type })),
             timeFrames: [...new Set(data.timeFrames.map(s => s.name.trim()))],
             symbols: [...new Set(data.symbols.map(s => s.name.trim()))],
             marketTrends: [...new Set(data.marketTrends.map(s => s.name.trim()))],
             marketTypes: data.marketTypes ? [...new Set(data.marketTypes.map(s => s.name.trim()))] : [],
             mistakes: [...new Set(data.mistakes.map(s => s.name.trim()))],
             rules: [...new Set(data.rules.map(s => s.name.trim()))],
+            preMarketMoods: [...new Set((data.preMarketMoods || []).map(s => s.name.trim()))],
             breakeven: data.symbols.filter(s => s.breakeven_value).map(s => ({ id: s.id.toString(), symbol: s.name, value: s.breakeven_value }))
           });
 
@@ -136,6 +140,7 @@ export default function AddTradePage() {
         if (data.session) setSession(data.session.name);
         if (data.notes) setNotes(data.notes);
         if (data.video_link) setVideoLink(data.video_link);
+        if (data.maximum_rr) setMaxRr(data.maximum_rr.toString());
         
         if (data.exits && data.exits.length > 0) {
           setExits(data.exits.map(e => ({ qty: e.qty.toString(), price: e.price.toString() })));
@@ -171,6 +176,10 @@ export default function AddTradePage() {
         
         if (data.mistakes && data.mistakes.length > 0) {
           setSelectedMistakes(data.mistakes.map(m => m.name));
+        }
+        
+        if (data.preMarketMoods && data.preMarketMoods.length > 0) {
+          setSelectedMoods(data.preMarketMoods.map(m => m.name));
         }
         
         if (data.images && data.images.length > 0) {
@@ -216,7 +225,9 @@ export default function AddTradePage() {
 
   // Step 4: Notes
   const [notes, setNotes] = useState("");
+  const [maxRr, setMaxRr] = useState("");
   const [selectedMistakes, setSelectedMistakes] = useState([]);
+  const [selectedMoods, setSelectedMoods] = useState([]);
 
   // Step 5: Media (Images & Video)
   const [images, setImages] = useState([]);
@@ -316,7 +327,23 @@ export default function AddTradePage() {
 
     // 2. Auto Qty from Risk and SL Points
     if (!isNaN(currentRisk) && !isNaN(currentSlPts) && currentSlPts > 0) {
-      const calcQty = Math.round(currentRisk / currentSlPts).toString();
+      let calcQty;
+      const isCrypto = marketType && marketType.toLowerCase().includes("crypto");
+      
+      if (isCrypto) {
+        // Crypto logic: Risk is in INR, SL Points in USD. Default conversion rate = 86
+        const riskUsdt = currentRisk / 86;
+        const rawQty = riskUsdt / currentSlPts;
+        if (symbol && symbol.toLowerCase().includes("btc")) {
+          calcQty = (Math.floor(rawQty * 1000) / 1000).toString(); // 0.001 steps for BTC
+        } else {
+          calcQty = (Math.floor(rawQty * 100) / 100).toString(); // 0.01 steps for ETH and others
+        }
+      } else {
+        // Indian Market logic: Risk in INR, SL Points in INR -> Whole numbers
+        calcQty = Math.round(currentRisk / currentSlPts).toString();
+      }
+
       if (field !== "qty") {
         setQty(calcQty);
         newQty = calcQty;
@@ -437,6 +464,10 @@ export default function AddTradePage() {
     setSelectedMistakes(prev => prev.includes(m) ? prev.filter(x => x !== m) : [...prev, m]);
   };
 
+  const toggleMood = (m) => {
+    setSelectedMoods(prev => prev.includes(m) ? prev.filter(x => x !== m) : [...prev, m]);
+  };
+
   const handlePaste = (e) => {
     if (step === 5) {
       const items = e.clipboardData.items;
@@ -520,6 +551,8 @@ export default function AddTradePage() {
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
       const payload = {
         date,
@@ -539,6 +572,8 @@ export default function AddTradePage() {
         biases: Object.entries(biases).map(([tf, b]) => ({ time_frame: tf, bias: b })).filter(b => b.bias),
         rules: selectedRules,
         mistakes: selectedMistakes,
+        pre_market_moods: selectedMoods,
+        maximum_rr: maxRr ? parseFloat(maxRr) : null,
         images: images,
       };
 
@@ -570,6 +605,8 @@ export default function AddTradePage() {
     } catch (e) {
       console.error(e);
       alert("Error saving trade to backend");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -644,7 +681,26 @@ export default function AddTradePage() {
                       <button type="button" className={styles.addShortcutBtn} onClick={() => goToManage('marketTypes')}>+ Add</button>
                     </div>
                   </div>
-                  <select className={`${styles.input} ${errors.marketType ? styles.inputError : ""}`} value={marketType} onChange={(e) => { setMarketType(e.target.value); setErrors(prev => ({...prev, marketType: null})); }}>
+                  <select className={`${styles.input} ${errors.marketType ? styles.inputError : ""}`} value={marketType} onChange={(e) => { 
+                    const val = e.target.value;
+                    setMarketType(val); 
+                    setErrors(prev => ({...prev, marketType: null})); 
+                    
+                    const r = parseFloat(riskAmount);
+                    const slp = parseFloat(slPoints);
+                    if (!isNaN(r) && !isNaN(slp) && slp > 0) {
+                      if (val && val.toLowerCase().includes("crypto")) {
+                        const rawQty = (r / 86) / slp;
+                        if (symbol && symbol.toLowerCase().includes("btc")) {
+                          setQty((Math.floor(rawQty * 1000) / 1000).toString());
+                        } else {
+                          setQty((Math.floor(rawQty * 100) / 100).toString());
+                        }
+                      } else {
+                        setQty(Math.round(r / slp).toString());
+                      }
+                    }
+                  }}>
                     <option value="">Select Market Type</option>
                     {settings.marketTypes && settings.marketTypes.map((s, idx) => (
                       <option key={`${s}-${idx}`} value={s}>
@@ -716,7 +772,7 @@ export default function AddTradePage() {
 
                 <div className={styles.row}>
                   <div className={styles.field}>
-                    <label className={styles.label}>Risk Amount ({currencySymbol})</label>
+                    <label className={styles.label}>Risk Amount (₹)</label>
                     <div style={{ display: "flex", alignItems: "center" }}>
                       <button 
                         type="button" 
@@ -956,7 +1012,14 @@ export default function AddTradePage() {
                   </div>
                   <select className={styles.input} value={timeFrame} onChange={(e) => setTimeFrame(e.target.value)}>
                     <option value="">Select Time Frame</option>
-                    {settings.timeFrames.map(s => <option key={s} value={s}>{s}</option>)}
+                    {settings.timeFrames
+                      .filter(tfName => {
+                        const hasAnyEntry = rawTimeFrames.some(t => t.is_entry);
+                        if (!hasAnyEntry) return true;
+                        const found = rawTimeFrames.find(t => t.name.trim() === tfName);
+                        return found && found.is_entry;
+                      })
+                      .map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
                 
@@ -978,7 +1041,9 @@ export default function AddTradePage() {
                   </div>
                   <select className={styles.input} value={session} onChange={(e) => setSession(e.target.value)}>
                     <option value="">Select Session</option>
-                    {settings.sessions.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+                    {settings.sessions
+                      .filter(s => !marketType || !s.marketType || s.marketType === marketType)
+                      .map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
                   </select>
                 </div>
 
@@ -1052,6 +1117,24 @@ export default function AddTradePage() {
                 
                 <div className={styles.field}>
                   <div className={styles.labelRow}>
+                    <label className={styles.label}>Pre-Market Moods</label>
+                    <button type="button" className={styles.addShortcutBtn} onClick={() => goToManage('preMarketMoods')}>+ Add</button>
+                  </div>
+                  <div className={styles.mistakesWrap}>
+                    {settings.preMarketMoods?.map(m => (
+                      <button 
+                        key={m} type="button" 
+                        className={`${styles.mistakeChip} ${selectedMoods.includes(m) ? styles.mistakeChipActive : ""}`} 
+                        onClick={() => toggleMood(m)}
+                      >
+                        {m}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className={styles.field}>
+                  <div className={styles.labelRow}>
                     <label className={styles.label}>Mistakes Made (If Any)</label>
                     <button type="button" className={styles.addShortcutBtn} onClick={() => goToManage('mistakes')}>+ Add</button>
                   </div>
@@ -1076,6 +1159,18 @@ export default function AddTradePage() {
                     rows={6} 
                     value={notes} 
                     onChange={(e) => setNotes(e.target.value)}
+                  />
+                </div>
+
+                <div className={styles.field}>
+                  <label className={styles.label}>Maximum RR Achieved (e.g. 1:5 → Enter 5)</label>
+                  <input 
+                    type="number" 
+                    step="0.1"
+                    className={styles.input} 
+                    placeholder="e.g. 5" 
+                    value={maxRr} 
+                    onChange={(e) => setMaxRr(e.target.value)} 
                   />
                 </div>
               </div>
@@ -1146,8 +1241,8 @@ export default function AddTradePage() {
                 </button>
               ) : (
                 !editId ? (
-                  <button type="button" className={styles.navBtnOutline} style={{borderColor: "var(--profit-green)", color: "var(--profit-green)"}} onClick={() => { if (validateStep1()) handleSubmit(); }}>
-                    Quick Save
+                  <button type="button" className={styles.navBtnOutline} style={{borderColor: "var(--profit-green)", color: "var(--profit-green)", opacity: isSubmitting ? 0.7 : 1}} onClick={() => { if (validateStep1()) handleSubmit(); }} disabled={isSubmitting}>
+                    {isSubmitting ? "Saving..." : "Quick Save"}
                   </button>
                 ) : (
                   <div />
@@ -1159,8 +1254,8 @@ export default function AddTradePage() {
                   Next
                 </button>
               ) : (
-                <button type="button" className={styles.submitBtn} onClick={handleSubmit}>
-                  {editId ? "Update Trade" : "Save Trade"}
+                <button type="button" className={styles.submitBtn} onClick={handleSubmit} disabled={isSubmitting} style={{ opacity: isSubmitting ? 0.7 : 1 }}>
+                  {isSubmitting ? "Processing..." : (editId ? "Update Trade" : "Save Trade")}
                 </button>
               )}
             </div>

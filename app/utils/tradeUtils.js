@@ -21,7 +21,11 @@ export const fetchSettings = async () => {
                 headers: { "Authorization": token, "Accept": "application/json" },
                 cache: 'no-store'
             });
-            if (!res.ok) throw new Error("Failed to fetch settings");
+            if (!res.ok) {
+                const errorText = await res.text().catch(() => "");
+                console.error("Settings fetch failed:", res.status, res.statusText, errorText);
+                throw new Error(`Failed to fetch settings: ${res.status} ${res.statusText}`);
+            }
             const data = await res.json();
             settingsCache = data;
             settingsCacheTime = Date.now();
@@ -30,7 +34,7 @@ export const fetchSettings = async () => {
         } catch (e) {
             settingsPromise = null;
             console.error("Error fetching settings:", e);
-            return { symbols: [], setups: [], sessions: [], market_trends: [], timeframes: [], market_types: [], mistakes: [], rules: [] };
+            return { symbols: [], setups: [], sessions: [], market_trends: [], timeframes: [], market_types: [], mistakes: [], rules: [], preMarketMoods: [] };
         }
     })();
     return settingsPromise;
@@ -130,6 +134,7 @@ export const fetchAndProcessTrades = async (existingSettings = null) => {
                 session: trade.session ? trade.session.name : "",
                 mistakes: trade.mistakes ? trade.mistakes.map(m => m.name) : [],
                 rules: trade.rules ? trade.rules.map(r => r.name) : [],
+                preMarketMoods: trade.pre_market_moods ? trade.pre_market_moods.map(m => m.name) : (trade.preMarketMoods ? trade.preMarketMoods.map(m => m.name) : []),
                 images: trade.images ? trade.images.map(img => normalizeMediaUrl(img.image_path || img)) : [],
                 grossPnl,
                 charges,

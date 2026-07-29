@@ -229,6 +229,21 @@ export default function TradeDetailsPage() {
           </div>
 
           <div className={styles.sectionBlock}>
+            <h3 className={styles.sectionTitle}>Pre-Market Moods</h3>
+            <div className={styles.tagsGrid}>
+              {trade.preMarketMoods && trade.preMarketMoods.map(m => (
+                <span key={m} className={styles.ruleChip} style={{ background: 'rgba(59, 130, 246, 0.1)', color: 'var(--brand-primary)', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
+                  {m}
+                </span>
+              ))}
+              {(!trade.preMarketMoods || trade.preMarketMoods.length === 0) && (
+                <span style={{color: "#71717a", fontSize: "14px"}}>No moods marked.</span>
+              )}
+            </div>
+          </div>
+
+          <div className={styles.sectionBlock}>
             <h3 className={styles.sectionTitle}>Mistakes Made</h3>
             <div className={styles.tagsGrid}>
               {trade.mistakes && trade.mistakes.map(m => (
@@ -298,6 +313,12 @@ export default function TradeDetailsPage() {
                     ).toLocaleString("en-IN", {minimumFractionDigits: 2})
                   : "N/A"
                 }</span>
+              </div>
+              <div className={styles.kvRow}>
+                <span className={styles.kvLabel}>Maximum RR</span>
+                <span className={styles.kvValue} style={{color: 'var(--brand-primary)'}}>
+                  {trade.maximum_rr ? `1 : ${trade.maximum_rr}` : "N/A"}
+                </span>
               </div>
               <div className={styles.kvRow}>
                 <span className={styles.kvLabel}>Charges / Brokerage</span>

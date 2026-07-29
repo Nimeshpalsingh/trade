@@ -18,6 +18,7 @@ const initialData = {
   mistakes: [],
   riskLimits: [],
   rules: [],
+  preMarketMoods: [],
 };
 
 const CATEGORIES = [
@@ -30,6 +31,7 @@ const CATEGORIES = [
   { id: "breakeven", title: "Breakeven & Charges", icon: "💰", desc: "Set brokerage and taxes per symbol" },
   { id: "rules", title: "Strategy Rules", icon: "✅", desc: "BOS, CHOCH, Liquidity etc." },
   { id: "mistakes", title: "Common Mistakes", icon: "⚠️", desc: "FOMO, Overtrading, No SL etc." },
+  { id: "preMarketMoods", title: "Pre-Market Moods", icon: "🧠", desc: "How did you feel before the trade?" },
   { id: "riskLimits", title: "Risk & SL Limits", icon: "🛡️", desc: "Set Daily, Weekly, Monthly SL limits" },
 ];
 
@@ -39,6 +41,7 @@ export default function ManagePage() {
   const apiToken = session?.apiToken;
   const [data, setData] = useState(initialData);
   const [rawSymbols, setRawSymbols] = useState([]);
+  const [rawTimeFrames, setRawTimeFrames] = useState([]);
   const [activeCategory, setActiveCategory] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -64,16 +67,18 @@ export default function ManagePage() {
         if (res.ok) {
           const apiData = await res.json();
           setRawSymbols(apiData.symbols || []);
+          setRawTimeFrames(apiData.timeFrames || []);
           setData(prev => ({
             ...prev,
             setups: [...new Set(apiData.setups.map(s => s.name.trim()))],
-            sessions: apiData.sessions.map(s => ({ id: s.id.toString(), name: s.name.trim(), startTime: s.start_time, endTime: s.end_time })),
+            sessions: apiData.sessions.map(s => ({ id: s.id.toString(), name: s.name.trim(), startTime: s.start_time, endTime: s.end_time, marketType: s.market_type })),
             timeFrames: [...new Set(apiData.timeFrames.map(s => s.name.trim()))],
             symbols: [...new Set(apiData.symbols.map(s => s.name.trim()))],
             marketTrends: [...new Set(apiData.marketTrends.map(s => s.name.trim()))],
             marketTypes: apiData.marketTypes ? [...new Set(apiData.marketTypes.map(s => s.name.trim()))] : prev.marketTypes,
             mistakes: [...new Set(apiData.mistakes.map(s => s.name.trim()))],
             rules: [...new Set(apiData.rules.map(s => s.name.trim()))],
+            preMarketMoods: [...new Set((apiData.preMarketMoods || []).map(s => s.name.trim()))],
             breakeven: apiData.symbols.filter(s => s.breakeven_value).map(s => ({ id: s.id.toString(), symbol: s.name, value: s.breakeven_value })),
             riskLimits: apiData.riskLimits ? apiData.riskLimits.map(s => ({ id: s.id.toString(), type: s.type, value: s.value })) : prev.riskLimits
           }));
@@ -98,10 +103,11 @@ export default function ManagePage() {
     }
   }, []);
 
-  // Form input states (Simple string)
+  // Form input states
   const [inputValue, setInputValue] = useState("");
   const [symbolMarketType, setSymbolMarketType] = useState("");
   const [symbolRisk, setSymbolRisk] = useState("");
+  const [tfIsEntry, setTfIsEntry] = useState(false);
   
   // Form input states (Breakeven)
   const [bSymbol, setBSymbol] = useState("");
@@ -111,6 +117,7 @@ export default function ManagePage() {
   const [sName, setSName] = useState("");
   const [sStartTime, setSStartTime] = useState("");
   const [sEndTime, setSEndTime] = useState("");
+  const [sMarketType, setSMarketType] = useState("");
 
   // Form input states (Risk Limits)
   const [rType, setRType] = useState("");
@@ -135,11 +142,13 @@ export default function ManagePage() {
     setInputValue("");
     setSymbolMarketType("");
     setSymbolRisk("");
+    setTfIsEntry(false);
     setBSymbol(data.symbols.length > 0 ? data.symbols[0] : ""); // Default to first symbol
     setBValue("");
     setSName("");
     setSStartTime("09:15");
     setSEndTime("15:30");
+    setSMarketType("");
     setRType("Daily SL");
     setRValue("");
     setFormState({ mode: "ADD" });
@@ -154,6 +163,7 @@ export default function ManagePage() {
       setSName(item.name);
       setSStartTime(item.startTime);
       setSEndTime(item.endTime);
+      setSMarketType(item.marketType || "");
       setFormState({ mode: "EDIT", item, originalId: item.id });
     } else if (activeCategory === "riskLimits") {
       setRType(item.type);
@@ -170,6 +180,9 @@ export default function ManagePage() {
           setSymbolMarketType("");
           setSymbolRisk("");
         }
+      } else if (activeCategory === "timeFrames") {
+        const foundTf = rawTimeFrames.find(t => t.name === item);
+        setTfIsEntry(foundTf ? !!foundTf.is_entry : false);
       }
       setFormState({ mode: "EDIT", item, originalId: item });
     }
@@ -223,6 +236,7 @@ export default function ManagePage() {
     else if (category === "marketTypes") endpoint = "market-types";
     else if (category === "mistakes") endpoint = "mistakes";
     else if (category === "rules") endpoint = "rules";
+    else if (category === "preMarketMoods") endpoint = "pre-market-moods";
     else if (category === "riskLimits") endpoint = "risk-limits";
 
     if (endpoint) {
@@ -259,10 +273,19 @@ export default function ManagePage() {
       }
       
       if (formState.mode === "ADD") {
-        await fetch(`${API_URL}/settings/symbols`, { method: "POST", headers, body: JSON.stringify({ name: bSymbol, breakeven_value: bValue.trim() }) });
+        const foundSymbol = rawSymbols.find(s => s.name === bSymbol);
+        let newId = Date.now().toString();
+        if (foundSymbol) {
+          newId = foundSymbol.id.toString();
+          await fetch(`${API_URL}/settings/breakeven`, { method: "PUT", headers, body: JSON.stringify({ id: foundSymbol.id, symbol: bSymbol, value: bValue.trim() }) });
+        } else {
+          const res = await fetch(`${API_URL}/settings/symbols`, { method: "POST", headers, body: JSON.stringify({ name: bSymbol, breakeven_value: bValue.trim() }) });
+          const resData = await res.json();
+          if (resData && resData.id) newId = resData.id.toString();
+        }
         setData((prev) => ({
           ...prev,
-          breakeven: [...prev.breakeven, { id: Date.now().toString(), symbol: bSymbol, value: bValue.trim() }]
+          breakeven: [...prev.breakeven, { id: newId, symbol: bSymbol, value: bValue.trim() }]
         }));
       } else {
         await fetch(`${API_URL}/settings/breakeven`, { method: "PUT", headers, body: JSON.stringify({ id: formState.originalId, symbol: bSymbol, value: bValue.trim() }) });
@@ -276,25 +299,29 @@ export default function ManagePage() {
     } else if (activeCategory === "sessions") {
       if (!sName.trim() || !sStartTime || !sEndTime) return;
       
-      const isDuplicate = data.sessions.some(item => item.name.toLowerCase() === sName.trim().toLowerCase() && item.id !== formState.originalId);
+      const isDuplicate = data.sessions.some(item => 
+        item.name.toLowerCase() === sName.trim().toLowerCase() && 
+        (item.marketType || "") === sMarketType &&
+        item.id !== formState.originalId
+      );
       if (isDuplicate) {
         showToast(`Session ${sName.trim()} already exists!`);
         return;
       }
       
       if (formState.mode === "ADD") {
-        const res = await fetch(`${API_URL}/settings/sessions`, { method: "POST", headers, body: JSON.stringify({ name: sName.trim(), start_time: sStartTime, end_time: sEndTime }) });
+        const res = await fetch(`${API_URL}/settings/sessions`, { method: "POST", headers, body: JSON.stringify({ name: sName.trim(), start_time: sStartTime, end_time: sEndTime, market_type: sMarketType }) });
         const resData = await res.json();
         setData((prev) => ({
           ...prev,
-          sessions: [...prev.sessions, { id: resData.id ? resData.id.toString() : Date.now().toString(), name: sName.trim(), startTime: sStartTime, endTime: sEndTime }]
+          sessions: [...prev.sessions, { id: resData.id ? resData.id.toString() : Date.now().toString(), name: sName.trim(), startTime: sStartTime, endTime: sEndTime, marketType: sMarketType }]
         }));
       } else {
-        await fetch(`${API_URL}/settings/sessions`, { method: "PUT", headers, body: JSON.stringify({ id: formState.originalId, name: sName.trim(), start_time: sStartTime, end_time: sEndTime }) });
+        await fetch(`${API_URL}/settings/sessions`, { method: "PUT", headers, body: JSON.stringify({ id: formState.originalId, name: sName.trim(), start_time: sStartTime, end_time: sEndTime, market_type: sMarketType }) });
         setData((prev) => ({
           ...prev,
           sessions: prev.sessions.map(item => 
-            item.id === formState.originalId ? { ...item, name: sName.trim(), startTime: sStartTime, endTime: sEndTime } : item
+            item.id === formState.originalId ? { ...item, name: sName.trim(), startTime: sStartTime, endTime: sEndTime, marketType: sMarketType } : item
           )
         }));
       }
@@ -327,7 +354,7 @@ export default function ManagePage() {
       if (!inputValue.trim()) return;
       
       const normalizedInput = inputValue.trim().toLowerCase();
-      const isDuplicate = data[activeCategory].some(item => item.toLowerCase() === normalizedInput && item.toLowerCase() !== formState.originalId?.toLowerCase());
+      const isDuplicate = data[activeCategory]?.some(item => item.toLowerCase() === normalizedInput && item.toLowerCase() !== formState.originalId?.toLowerCase());
       if (isDuplicate) {
         showToast(`"${inputValue.trim()}" already exists!`);
         return;
@@ -347,12 +374,15 @@ export default function ManagePage() {
         else if (activeCategory === "marketTypes") endpoint = "market-types";
         else if (activeCategory === "mistakes") endpoint = "mistakes";
         else if (activeCategory === "rules") endpoint = "rules";
+        else if (activeCategory === "preMarketMoods") endpoint = "pre-market-moods";
 
         if (endpoint) {
           const bodyData = { name: inputValue.trim() };
           if (activeCategory === "symbols") {
             bodyData.market_type = symbolMarketType;
             if (symbolRisk) bodyData.default_risk = symbolRisk;
+          } else if (activeCategory === "timeFrames") {
+            bodyData.is_entry = tfIsEntry;
           }
           const res = await fetch(`${API_URL}/settings/${endpoint}`, { method: "POST", headers, body: JSON.stringify(bodyData) });
           if (!res.ok) {
@@ -362,12 +392,15 @@ export default function ManagePage() {
           if (activeCategory === "symbols") {
               const resData = await res.json();
               setRawSymbols(prev => [...prev, resData]);
+          } else if (activeCategory === "timeFrames") {
+              const resData = await res.json();
+              setRawTimeFrames(prev => [...prev, resData]);
           }
         }
 
         setData((prev) => ({
           ...prev,
-          [activeCategory]: [...prev[activeCategory], inputValue.trim()]
+          [activeCategory]: [...(prev[activeCategory] || []), inputValue.trim()]
         }));
       } else {
         let endpoint = "";
@@ -378,12 +411,15 @@ export default function ManagePage() {
         else if (activeCategory === "marketTypes") endpoint = "market-types";
         else if (activeCategory === "mistakes") endpoint = "mistakes";
         else if (activeCategory === "rules") endpoint = "rules";
+        else if (activeCategory === "preMarketMoods") endpoint = "pre-market-moods";
 
         if (endpoint) {
           const bodyData = { old_name: formState.originalId, new_name: inputValue.trim() };
           if (activeCategory === "symbols") {
             bodyData.market_type = symbolMarketType;
             if (symbolRisk) bodyData.default_risk = symbolRisk;
+          } else if (activeCategory === "timeFrames") {
+            bodyData.is_entry = tfIsEntry;
           }
           const res = await fetch(`${API_URL}/settings/${endpoint}`, { method: "PUT", headers, body: JSON.stringify(bodyData) });
           if (!res.ok) {
@@ -393,12 +429,14 @@ export default function ManagePage() {
           if (activeCategory === "symbols") {
               const resData = await res.json();
               setRawSymbols(prev => prev.map(s => s.name === formState.originalId ? resData : s));
+          } else if (activeCategory === "timeFrames") {
+              setRawTimeFrames(prev => prev.map(t => t.name === formState.originalId ? { ...t, name: inputValue.trim(), is_entry: tfIsEntry } : t));
           }
         }
 
         setData((prev) => ({
           ...prev,
-          [activeCategory]: prev[activeCategory].map(item => 
+          [activeCategory]: (prev[activeCategory] || []).map(item => 
             item === formState.originalId ? inputValue.trim() : item
           )
         }));
@@ -406,6 +444,26 @@ export default function ManagePage() {
     }
     setFormState(null);
     showToast(`${activeCatDetails?.title || 'Item'} saved successfully!`);
+  };
+
+  const toggleTimeFrameEntry = async (e, item, currentIsEntry) => {
+    e.stopPropagation();
+    const newIsEntry = !currentIsEntry;
+    
+    setRawTimeFrames(prev => prev.map(t => t.name === item ? { ...t, is_entry: newIsEntry } : t));
+    
+    try {
+      const headers = { "Content-Type": "application/json", "Authorization": `Bearer ${apiToken}` };
+      const bodyData = { old_name: item, new_name: item, is_entry: newIsEntry };
+      const res = await fetch(`${API_URL}/settings/time-frames`, { method: "PUT", headers, body: JSON.stringify(bodyData) });
+      if (!res.ok) {
+        showToast("Failed to update timeframe.");
+        setRawTimeFrames(prev => prev.map(t => t.name === item ? { ...t, is_entry: currentIsEntry } : t));
+      }
+    } catch (err) {
+      showToast("Error updating timeframe.");
+      setRawTimeFrames(prev => prev.map(t => t.name === item ? { ...t, is_entry: currentIsEntry } : t));
+    }
   };
 
   // If a category is selected, render the dedicated Sub-Screen
@@ -475,6 +533,17 @@ export default function ManagePage() {
                       onChange={(e) => setSName(e.target.value)}
                       autoFocus
                     />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Link to Market Type (Optional)</label>
+                    <select 
+                      className={styles.formInput} 
+                      value={sMarketType}
+                      onChange={(e) => setSMarketType(e.target.value)}
+                    >
+                      <option value="">Select Market Type</option>
+                      {data.marketTypes.map(mt => <option key={mt} value={mt}>{mt}</option>)}
+                    </select>
                   </div>
                   <div style={{ display: "flex", gap: "12px" }}>
                     <div className={styles.formGroup} style={{ flex: 1 }}>
@@ -573,6 +642,14 @@ export default function ManagePage() {
                     }}
                     autoFocus
                   />
+                  {activeCategory === "timeFrames" && (
+                    <div className={styles.checkboxField} style={{marginTop: "16px"}}>
+                      <label className={styles.checkboxLabel} style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', fontSize: '14px' }}>
+                        <input type="checkbox" checked={tfIsEntry} onChange={(e) => setTfIsEntry(e.target.checked)} style={{ width: '16px', height: '16px', accentColor: 'var(--brand-primary)' }} />
+                        Show in Add Trade Form (Entry Timeframe)
+                      </label>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -595,9 +672,9 @@ export default function ManagePage() {
           ) : (
             /* === LIST VIEW === */
             <div className={styles.fullScreenList}>
-              {activeCategory !== "breakeven" && activeCategory !== "sessions" && activeCategory !== "riskLimits" && (
+              {activeCategory !== "breakeven" && activeCategory !== "sessions" && activeCategory !== "riskLimits" && activeCategory !== "symbols" && activeCategory !== "timeFrames" && (
                 <>
-                  {data[activeCategory].map((item) => (
+                  {data[activeCategory]?.map((item) => (
                     <div key={item} className={styles.simpleListItem} onClick={() => openEditForm(item)}>
                       <span className={styles.itemText}>{item}</span>
                       <button className={styles.deleteIconBtn} onClick={(e) => { e.stopPropagation(); requestDelete(activeCategory, item); }}>
@@ -618,23 +695,126 @@ export default function ManagePage() {
                 </>
               )}
 
+              {activeCategory === "timeFrames" && (
+                <>
+                  {data.timeFrames?.map((item) => {
+                    const found = rawTimeFrames.find(t => t.name === item);
+                    const isEntry = found && found.is_entry;
+                    return (
+                      <div key={item} className={styles.simpleListItem} onClick={() => openEditForm(item)}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <span className={styles.itemText}>{item}</span>
+                          <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                            {isEntry ? 'Entry' : ''}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                          <div 
+                            style={{
+                              width: '36px', height: '20px', borderRadius: '10px',
+                              background: isEntry ? 'var(--brand-primary)' : 'rgba(255,255,255,0.1)',
+                              position: 'relative', cursor: 'pointer',
+                              transition: 'background 0.2s'
+                            }}
+                            onClick={(e) => toggleTimeFrameEntry(e, item, isEntry)}
+                            title="Toggle Entry Timeframe"
+                          >
+                            <div 
+                              style={{
+                                width: '16px', height: '16px', borderRadius: '50%', background: '#fff',
+                                position: 'absolute', top: '2px', left: isEntry ? '18px' : '2px',
+                                transition: 'left 0.2s'
+                              }}
+                            />
+                          </div>
+                          <button className={styles.deleteIconBtn} onClick={(e) => { e.stopPropagation(); requestDelete(activeCategory, item); }}>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--loss-red)" strokeWidth="2">
+                              <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                  
+                  <button className={styles.addBtn} onClick={openAddForm}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                    Add {activeCatDetails?.title}
+                  </button>
+                </>
+              )}
+
+              {activeCategory === "symbols" && (
+                <>
+                  {data.marketTypes.concat(['Uncategorized']).map(mt => {
+                    const mtSymbols = rawSymbols.filter(s => (s.market_type || 'Uncategorized') === mt);
+                    if (mtSymbols.length === 0) return null;
+                    return (
+                      <div key={mt} style={{ marginBottom: '24px' }}>
+                        <h3 style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px', paddingLeft: '4px', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: '600' }}>
+                          {mt}
+                        </h3>
+                        {mtSymbols.map((item, index) => (
+                          <div key={item.id || index} className={styles.simpleListItem} onClick={() => openEditForm(item.name)}>
+                            <div className={styles.breakevenInfo}>
+                              <span className={styles.bLabel}>{item.name}</span>
+                              {item.default_risk && (
+                                <span className={styles.bValue} style={{ fontSize: "14px", color: "var(--text-secondary)", fontWeight: "500" }}>
+                                  Risk: ₹{item.default_risk}
+                                </span>
+                              )}
+                            </div>
+                            <button className={styles.deleteIconBtn} onClick={(e) => { e.stopPropagation(); requestDelete("symbols", item.name); }}>
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--loss-red)" strokeWidth="2">
+                                <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })}
+                  <button className={styles.addBtn} onClick={openAddForm}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                    Add {activeCatDetails?.title}
+                  </button>
+                </>
+              )}
+
               {activeCategory === "sessions" && (
                 <>
-                  {data.sessions.map((item) => (
-                    <div key={item.id} className={styles.simpleListItem} onClick={() => openEditForm(item)}>
-                      <div className={styles.breakevenInfo}>
-                        <span className={styles.bLabel}>{item.name}</span>
-                        <span className={styles.bValue} style={{ fontSize: "14px", color: "var(--text-secondary)", fontWeight: "500" }}>
-                          {item.startTime} - {item.endTime}
-                        </span>
+                  {data.marketTypes.concat(['Uncategorized']).map(mt => {
+                    const mtSessions = data.sessions.filter(s => (s.marketType || 'Uncategorized') === mt);
+                    if (mtSessions.length === 0) return null;
+                    return (
+                      <div key={mt} style={{ marginBottom: '24px' }}>
+                        <h3 style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px', paddingLeft: '4px', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: '600' }}>
+                          {mt}
+                        </h3>
+                        {mtSessions.map((item) => (
+                          <div key={item.id} className={styles.simpleListItem} onClick={() => openEditForm(item)}>
+                            <div className={styles.breakevenInfo}>
+                              <span className={styles.bLabel}>{item.name}</span>
+                              <span className={styles.bValue} style={{ fontSize: "14px", color: "var(--text-secondary)", fontWeight: "500" }}>
+                                {item.startTime} - {item.endTime}
+                              </span>
+                            </div>
+                            <button className={styles.deleteIconBtn} onClick={(e) => { e.stopPropagation(); requestDelete("sessions", item.id); }}>
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--loss-red)" strokeWidth="2">
+                                <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
                       </div>
-                      <button className={styles.deleteIconBtn} onClick={(e) => { e.stopPropagation(); requestDelete("sessions", item.id); }}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--loss-red)" strokeWidth="2">
-                          <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                        </svg>
-                      </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                   <button className={styles.addBtn} onClick={openAddForm}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <line x1="12" y1="5" x2="12" y2="19" />
