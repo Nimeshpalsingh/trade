@@ -1,4 +1,5 @@
-export const API_URL = typeof window !== 'undefined' ? "/api/proxy" : (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api");
+// No longer using /api/proxy because Vercel proxying causes the backend to block Vercel's IP (429 Too Many Requests)
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
 const getBaseUrl = () => {
     if (process.env.NEXT_PUBLIC_BASE_URL) return process.env.NEXT_PUBLIC_BASE_URL;
