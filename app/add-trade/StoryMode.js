@@ -117,6 +117,37 @@ export default function StoryMode({ settings, rawSymbols, rawTimeFrames, default
     // Allow skip for optional steps
     const optionalKeys = ['notes', 'maxRr', 'videoLink'];
     if (!val && !optionalKeys.includes(step.key)) return;
+
+    // --- Validations ---
+    if (['riskAmount', 'entry', 'slPoints', 'exitPrice'].includes(step.key)) {
+      const num = parseFloat(val);
+      if (isNaN(num) || num <= 0) {
+        alert("Please enter a valid positive number.");
+        return;
+      }
+      
+      // Exit price validation against Entry based on LONG/SHORT
+      if (step.key === 'exitPrice') {
+        const en = parseFloat(answers.entry);
+        if (answers.type === "LONG" && answers.exitType === "Target Hit" && num <= en) {
+          alert("LONG trade mein Target Exit hamesha Entry price se jyada hona chahiye!");
+          return;
+        }
+        if (answers.type === "SHORT" && answers.exitType === "Target Hit" && num >= en) {
+          alert("SHORT trade mein Target Exit hamesha Entry price se kam hona chahiye!");
+          return;
+        }
+      }
+    }
+
+    if (step.key === 'rewardRatio') {
+      if (!val.match(/^[0-9., ]+$/)) {
+        alert("Reward ratio sirf numbers aur comma hone chahiye (e.g., 2, 3)");
+        return;
+      }
+    }
+    // -------------------
+
     answer(step.key, val);
   };
 
