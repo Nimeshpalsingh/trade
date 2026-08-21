@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { getSession } from "next-auth/react";
 import BottomNav from "../components/BottomNav";
 import styles from "./addtrade.module.css";
+import sm from "./storymode.module.css";
+import StoryMode from "./StoryMode";
 
 const STRATEGY_RULES = []; // Will be loaded dynamically
 
@@ -11,6 +13,7 @@ import { useRouter } from "next/navigation";
 
 export default function AddTradePage() {
   const router = useRouter();
+  const [viewMode, setViewMode] = useState('story'); // 'story' or 'form'
   const [step, setStep] = useState(1);
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -615,19 +618,47 @@ export default function AddTradePage() {
   return (
     <div className="page-wrapper">
       <header className={styles.header}>
-        <div className={styles.tabsHeader}>
-          {stepNames.map((name, index) => (
-            <div 
-              key={name} 
-              className={`${styles.tabItem} ${step === index + 1 ? styles.tabActive : ""}`}
-              onClick={() => setStep(index + 1)}
-            >
-              {name}
+        {/* Mode Toggle - only show when not editing */}
+        {!editId && (
+          <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '12px' }}>
+            <div className={sm.modeToggle}>
+              <button className={`${sm.modeBtn} ${viewMode === 'story' ? sm.modeBtnActive : ''}`} onClick={() => setViewMode('story')}>📖 Story Mode</button>
+              <button className={`${sm.modeBtn} ${viewMode === 'form' ? sm.modeBtnActive : ''}`} onClick={() => setViewMode('form')}>📝 Form Mode</button>
             </div>
-          ))}
-        </div>
+          </div>
+        )}
+
+        {/* Form tabs only in form mode */}
+        {(viewMode === 'form' || editId) && (
+          <div className={styles.tabsHeader}>
+            {stepNames.map((name, index) => (
+              <div 
+                key={name} 
+                className={`${styles.tabItem} ${step === index + 1 ? styles.tabActive : ""}`}
+                onClick={() => setStep(index + 1)}
+              >
+                {name}
+              </div>
+            ))}
+          </div>
+        )}
       </header>
 
+      {/* Story Mode */}
+      {viewMode === 'story' && !editId && (
+        isLoading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
+            <div style={{ marginBottom: '16px', border: '3px solid rgba(255,255,255,0.1)', borderTopColor: 'var(--accent-purple)', borderRadius: '50%', width: '32px', height: '32px', animation: 'spin 1s linear infinite' }}></div>
+            <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+            <div>Loading settings...</div>
+          </div>
+        ) : (
+          <StoryMode settings={settings} rawSymbols={rawSymbols} rawTimeFrames={rawTimeFrames} defaultSettings={defaultSettings} />
+        )
+      )}
+
+      {/* Form Mode (or edit mode) */}
+      {(viewMode === 'form' || editId) && (
       <main className={styles.main}>
         {isLoading ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
@@ -1263,6 +1294,7 @@ export default function AddTradePage() {
           </div>
         )}
       </main>
+      )}
 
       <BottomNav />
     </div>
