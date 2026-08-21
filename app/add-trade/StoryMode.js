@@ -93,12 +93,12 @@ export default function StoryMode({ settings, rawSymbols, rawTimeFrames, default
     const step = steps[current];
     setAnswers(prev => ({ ...prev, [key]: value }));
 
-    // Add to chat history
-    setChatHistory(prev => [...prev, { q: step.q, a: value, key }]);
-
     // Build story sentence
-    const sentenceHtml = step.sentence(value);
+    const sentenceHtml = step.sentence(value) || '';
     if (sentenceHtml) appendStory(sentenceHtml);
+
+    // Add to chat history
+    setChatHistory(prev => [...prev, { q: step.q, a: value, key, html: sentenceHtml }]);
 
     // Move to next
     const next = current + 1;
@@ -160,8 +160,9 @@ export default function StoryMode({ settings, rawSymbols, rawTimeFrames, default
     const step = steps[current];
     const val = selectedChips.join(", ");
     setAnswers(prev => ({ ...prev, [step.key]: selectedChips }));
-    setChatHistory(prev => [...prev, { q: step.q, a: val || "None", key: step.key }]);
-    if (val) appendStory(step.sentence(val));
+    const sentenceHtml = val ? step.sentence(val) : '';
+    setChatHistory(prev => [...prev, { q: step.q, a: val || "None", key: step.key, html: sentenceHtml }]);
+    if (sentenceHtml) appendStory(sentenceHtml);
     setSelectedChips([]);
     const next = current + 1;
     if (next >= steps.length) setIsComplete(true);
@@ -179,7 +180,7 @@ export default function StoryMode({ settings, rawSymbols, rawTimeFrames, default
     rulesHtml += `<span class="rulesSummary">${checkedRules.length}/${allRules.length} rules followed.</span></span>`;
     appendStory(rulesHtml);
 
-    setChatHistory(prev => [...prev, { q: steps[current].q, a: `${checkedRules.length}/${allRules.length} followed`, key: 'rules' }]);
+    setChatHistory(prev => [...prev, { q: steps[current].q, a: `${checkedRules.length}/${allRules.length} followed`, key: 'rules', html: rulesHtml }]);
     setCheckedRules([]);
     const next = current + 1;
     if (next >= steps.length) setIsComplete(true);
@@ -190,9 +191,10 @@ export default function StoryMode({ settings, rawSymbols, rawTimeFrames, default
     setAnswers(prev => ({ ...prev, biases }));
     const entries = Object.entries(biases).filter(([, v]) => v);
     const val = entries.map(([tf, b]) => `${tf}:${b}`).join(", ") || "None set";
-    setChatHistory(prev => [...prev, { q: steps[current].q, a: val, key: 'biases' }]);
-    if (entries.length > 0) {
-      appendStory(`Bias: <span class="answer">${val}</span>. `);
+    const sentenceHtml = entries.length > 0 ? `Bias: <span class="answer">${val}</span>. ` : '';
+    setChatHistory(prev => [...prev, { q: steps[current].q, a: val, key: 'biases', html: sentenceHtml }]);
+    if (sentenceHtml) {
+      appendStory(sentenceHtml);
     }
     setBiases({});
     const next = current + 1;
@@ -297,6 +299,23 @@ export default function StoryMode({ settings, rawSymbols, rawTimeFrames, default
     setImages([]);
   };
 
+  // Edit step
+  const handleEdit = (index) => {
+    if (index >= current && !isComplete) return; 
+    
+    const newHistory = chatHistory.slice(0, index);
+    let newStoryHtml = "Aaj maine ";
+    newHistory.forEach(item => {
+      newStoryHtml += item.html;
+    });
+    
+    setChatHistory(newHistory);
+    setStoryHtml(newStoryHtml);
+    setCurrent(index);
+    setIsComplete(false);
+    setSaveMsg("");
+  };
+
   // Get current step's opts (with dynamic symbol filtering)
   const currentStep = steps[current];
   const currentOpts = currentStep?.key === 'symbol' ? filteredSymbols : currentStep?.opts;
@@ -324,7 +343,15 @@ export default function StoryMode({ settings, rawSymbols, rawTimeFrames, default
               </div>
             </div>
             <div className={s.userAnswer}>
-              <div className={s.userBubble}>{item.a}</div>
+              <div 
+                className={s.userBubble}
+                onDoubleClick={() => handleEdit(i)}
+                style={{ cursor: 'pointer' }}
+                title="Double click to edit"
+              >
+                {item.a}
+                <div style={{ fontSize: '10px', opacity: 0.5, marginTop: '4px', textAlign: 'right' }}>✎ Double click to edit</div>
+              </div>
             </div>
           </div>
         ))}
@@ -516,8 +543,9 @@ export default function StoryMode({ settings, rawSymbols, rawTimeFrames, default
                 <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
                   <button className={s.continueBtn} onClick={() => {
                     const count = images.length;
-                    setChatHistory(prev => [...prev, { q: currentStep.q, a: count > 0 ? `${count} image(s)` : 'Skipped', key: 'images' }]);
-                    if (count > 0) appendStory(currentStep.sentence(count.toString()));
+                    const sentenceHtml = count > 0 ? currentStep.sentence(count.toString()) : '';
+                    setChatHistory(prev => [...prev, { q: currentStep.q, a: count > 0 ? `${count} image(s)` : 'Skipped', key: 'images', html: sentenceHtml }]);
+                    if (sentenceHtml) appendStory(sentenceHtml);
                     const next = current + 1;
                     if (next >= steps.length) setIsComplete(true);
                     else setCurrent(next);
