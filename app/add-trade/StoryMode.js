@@ -35,6 +35,8 @@ function buildSteps(settings, rawTimeFrames) {
     { key:'mistakes', q:'Koi mistake hui? (Optional)', hint:'Mistake chips choose karo, phir Continue.', type:'chips', opts: settings.mistakes, sentence: v => v ? `Mistakes: <span class="answer">${v}</span>. ` : '' },
     { key:'notes', q:'Journal notes likho (Optional)', hint:'Apni language mein likho — skip bhi kar sakte ho.', type:'text', placeholder:'Why did you take this trade?', sentence: v => v ? `Notes: <span class="answer">${v}</span>. ` : '' },
     { key:'maxRr', q:'Maximum RR kitna bana? (Optional)', hint:'e.g. 5 (for 1:5)', type:'text', placeholder:'e.g. 5', sentence: v => v ? `Max RR <span class="answer">${v}R</span> mila. ` : '' },
+    { key:'videoLink', q:'YouTube video link hai? (Optional)', hint:'Paste karo ya Skip karo.', type:'text', placeholder:'https://youtu.be/...', sentence: v => v ? `Video: <span class="answer">${v}</span>. ` : '' },
+    { key:'images', q:'Chart screenshots add karo (Optional, max 3)', hint:'Upload karo, paste karo (Ctrl+V), ya Skip karo.', type:'images', sentence: v => v ? `📸 ${v} screenshot(s) attached. ` : '' },
   ];
 }
 
@@ -51,15 +53,17 @@ export default function StoryMode({ settings, rawSymbols, rawTimeFrames, default
   const [selectedChips, setSelectedChips] = useState([]);
   const [checkedRules, setCheckedRules] = useState([]);
   const [biases, setBiases] = useState({});
+  const [images, setImages] = useState([]);
   const chatEndRef = useRef(null);
   const inputRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   const steps = buildSteps(settings, rawTimeFrames);
 
   // Auto-scroll
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [current, chatHistory, isComplete]);
+  }, [current, chatHistory, isComplete, images]);
 
   // Auto-focus input
   useEffect(() => {
@@ -111,7 +115,7 @@ export default function StoryMode({ settings, rawSymbols, rawTimeFrames, default
     const val = inputVal.trim();
     const step = steps[current];
     // Allow skip for optional steps
-    const optionalKeys = ['notes', 'maxRr'];
+    const optionalKeys = ['notes', 'maxRr', 'videoLink'];
     if (!val && !optionalKeys.includes(step.key)) return;
     answer(step.key, val);
   };
@@ -222,14 +226,14 @@ export default function StoryMode({ settings, rawSymbols, rawTimeFrames, default
         market_type: answers.marketType,
         session: answers.session || "",
         notes: answers.notes || "",
-        video_link: "",
+        video_link: answers.videoLink || "",
         exits: exits.filter(e => e.qty > 0 && e.price > 0),
         biases: biasEntries,
         rules: answers.followedRules || [],
         mistakes: Array.isArray(answers.mistakes) ? answers.mistakes : [],
         pre_market_moods: Array.isArray(answers.moods) ? answers.moods : [],
         maximum_rr: answers.maxRr ? parseFloat(answers.maxRr) : null,
-        images: [],
+        images: images,
       };
 
       const session = await getSession();
@@ -259,6 +263,7 @@ export default function StoryMode({ settings, rawSymbols, rawTimeFrames, default
     setSelectedChips([]);
     setCheckedRules([]);
     setBiases({});
+    setImages([]);
   };
 
   // Get current step's opts (with dynamic symbol filtering)
@@ -358,7 +363,7 @@ export default function StoryMode({ settings, rawSymbols, rawTimeFrames, default
                   if (currentStep.type === 'date') answer(currentStep.key, answers.date);
                   else handleTextSubmit();
                 }}>Continue</button>
-                {['notes', 'maxRr'].includes(currentStep.key) && (
+                {['notes', 'maxRr', 'videoLink'].includes(currentStep.key) && (
                   <button className={s.sendBtn} style={{ background: 'transparent', border: '1px solid var(--border-medium)', color: 'var(--text-muted)' }} onClick={handleSkip}>Skip</button>
                 )}
               </div>
@@ -425,6 +430,71 @@ export default function StoryMode({ settings, rawSymbols, rawTimeFrames, default
                   <button className={s.chipsDoneBtn} onClick={handleBiasDone}>Continue →</button>
                 </div>
               </>
+            )}
+
+            {/* Image Upload */}
+            {currentStep.type === 'images' && (
+              <div className={s.rulesBox}>
+                {images.length > 0 && (
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                    {images.map((img, idx) => (
+                      <div key={idx} style={{ position: 'relative', width: '80px', height: '55px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
+                        <img src={img} alt={`Screenshot ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <button onClick={() => setImages(prev => prev.filter((_, i) => i !== idx))} style={{ position: 'absolute', top: '2px', right: '2px', background: 'rgba(0,0,0,0.7)', border: 'none', color: '#fff', borderRadius: '50%', width: '18px', height: '18px', fontSize: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {images.length < 3 && (
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    onPaste={(e) => {
+                      const items = e.clipboardData.items;
+                      for (let i = 0; i < items.length; i++) {
+                        if (items[i].type.indexOf('image') !== -1) {
+                          const blob = items[i].getAsFile();
+                          const reader = new FileReader();
+                          reader.onload = (ev) => setImages(prev => prev.length < 3 ? [...prev, ev.target.result] : prev);
+                          reader.readAsDataURL(blob);
+                          break;
+                        }
+                      }
+                    }}
+                    tabIndex={0}
+                    style={{ border: '2px dashed var(--border-medium)', borderRadius: '10px', padding: '20px', textAlign: 'center', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '13px', transition: 'border-color 0.2s' }}
+                  >
+                    <div style={{ marginBottom: '6px' }}>📷 Click to Upload or Paste (Ctrl+V)</div>
+                    <div style={{ fontSize: '11px' }}>{3 - images.length} more image{3 - images.length > 1 ? 's' : ''} allowed</div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      style={{ display: 'none' }}
+                      onChange={(e) => {
+                        Array.from(e.target.files).forEach(file => {
+                          const reader = new FileReader();
+                          reader.onload = (ev) => setImages(prev => prev.length < 3 ? [...prev, ev.target.result] : prev);
+                          reader.readAsDataURL(file);
+                        });
+                        e.target.value = '';
+                      }}
+                    />
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                  <button className={s.continueBtn} onClick={() => {
+                    const count = images.length;
+                    setChatHistory(prev => [...prev, { q: currentStep.q, a: count > 0 ? `${count} image(s)` : 'Skipped', key: 'images' }]);
+                    if (count > 0) appendStory(currentStep.sentence(count.toString()));
+                    const next = current + 1;
+                    if (next >= steps.length) setIsComplete(true);
+                    else setCurrent(next);
+                  }}>
+                    {images.length > 0 ? `Continue with ${images.length} image(s) →` : 'Skip →'}
+                  </button>
+                </div>
+              </div>
             )}
           </>
         )}
