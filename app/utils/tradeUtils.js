@@ -1,67 +1,38 @@
 import { API_URL, normalizeMediaUrl } from "./apiConfig";
 import { getSession } from "next-auth/react";
 
-let settingsCache = null;
-let settingsCacheTime = 0;
-let settingsPromise = null;
-
 export const fetchSettings = async () => {
-    const now = Date.now();
-    if (settingsCache && (now - settingsCacheTime < 10000)) { // 10-second cache
-        return settingsCache;
-    }
-    if (settingsPromise) return settingsPromise;
-
-    settingsPromise = (async () => {
-        try {
-            const session = await getSession();
-            if (!session?.apiToken) throw new Error("No session token available");
-            const token = `Bearer ${session.apiToken}`;
-            const res = await fetch(`${API_URL}/settings`, { 
-                headers: { "Authorization": token, "Accept": "application/json" },
-                cache: 'no-store'
-            });
-            if (!res.ok) {
-                const errorText = await res.text().catch(() => "");
-                console.error("Settings fetch failed:", res.status, res.statusText, errorText);
-                throw new Error(`Failed to fetch settings: ${res.status} ${res.statusText}`);
-            }
-            const data = await res.json();
-            settingsCache = data;
-            settingsCacheTime = Date.now();
-            settingsPromise = null;
-            return data;
-        } catch (e) {
-            settingsPromise = null;
-            console.error("Error fetching settings:", e);
-            return { symbols: [], setups: [], sessions: [], market_trends: [], timeframes: [], market_types: [], mistakes: [], rules: [], preMarketMoods: [] };
+    try {
+        const session = await getSession();
+        if (!session?.apiToken) throw new Error("No session token available");
+        const token = `Bearer ${session.apiToken}`;
+        const res = await fetch(`${API_URL}/settings`, { 
+            headers: { "Authorization": token, "Accept": "application/json" }
+        });
+        if (!res.ok) {
+            const errorText = await res.text().catch(() => "");
+            console.error("Settings fetch failed:", res.status, res.statusText, errorText);
+            throw new Error(`Failed to fetch settings: ${res.status} ${res.statusText}`);
         }
-    })();
-    return settingsPromise;
+        return await res.json();
+    } catch (e) {
+        console.error("Error fetching settings:", e);
+        return { symbols: [], setups: [], sessions: [], marketTrends: [], timeFrames: [], marketTypes: [], mistakes: [], rules: [], preMarketMoods: [] };
+    }
 };
 
-let tradesCache = null;
-let tradesCacheTime = 0;
-let tradesPromise = null;
 
 export const fetchAndProcessTrades = async (existingSettings = null) => {
-    const now = Date.now();
-    if (tradesCache && (now - tradesCacheTime < 5000)) { // 5-second cache for trades
-        return tradesCache;
-    }
-    if (tradesPromise) return tradesPromise;
+    try {
+        const session = await getSession();
+        if (!session?.apiToken) throw new Error("No session token available");
+        const token = `Bearer ${session.apiToken}`;
+        
+        let settingsData = existingSettings;
 
-    tradesPromise = (async () => {
-        try {
-            const session = await getSession();
-            if (!session?.apiToken) throw new Error("No session token available");
-            const token = `Bearer ${session.apiToken}`;
-            
-            let settingsData = existingSettings;
-
-            if (!settingsData) {
-                settingsData = await fetchSettings();
-            }
+        if (!settingsData) {
+            settingsData = await fetchSettings();
+        }
             
             // Add a small 200ms delay to prevent hitting WAF limits for simultaneous requests
             await new Promise(resolve => setTimeout(resolve, 200));
@@ -145,17 +116,11 @@ export const fetchAndProcessTrades = async (existingSettings = null) => {
             };
         });
 
-        tradesCache = processedTrades;
-        tradesCacheTime = Date.now();
-        tradesPromise = null;
         return processedTrades;
     } catch (e) {
-        tradesPromise = null;
         console.error("Error fetching trades:", e);
         return [];
     }
-    })();
-    return tradesPromise;
 };
 
 // --- Backtest API Functions ---

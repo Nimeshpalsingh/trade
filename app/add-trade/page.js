@@ -1,7 +1,9 @@
 "use client";
 import { API_URL, normalizeMediaUrl } from "../utils/apiConfig";
+
 import { useState, useEffect, useRef } from "react";
 import { getSession } from "next-auth/react";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
 import BottomNav from "../components/BottomNav";
 import styles from "./addtrade.module.css";
 import sm from "./storymode.module.css";
@@ -18,16 +20,40 @@ export default function AddTradePage() {
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
+  const queryClient = useQueryClient();
   
-  const [settings, setSettings] = useState({
+  const cachedSettings = queryClient.getQueryData(['settings']);
+  const [settings, setSettings] = useState(cachedSettings ? {
+      setups: [...new Set(cachedSettings.setups.map(s => s.name.trim()))],
+      sessions: cachedSettings.sessions.map(s => ({ id: s.id.toString(), name: s.name.trim(), startTime: s.start_time, endTime: s.end_time, marketType: s.market_type })),
+      timeFrames: [...new Set(cachedSettings.timeFrames.map(s => s.name.trim()))],
+      symbols: [...new Set(cachedSettings.symbols.map(s => s.name.trim()))],
+      marketTrends: [...new Set(cachedSettings.marketTrends.map(s => s.name.trim()))],
+      marketTypes: cachedSettings.marketTypes ? [...new Set(cachedSettings.marketTypes.map(s => s.name.trim()))] : [],
+      mistakes: [...new Set(cachedSettings.mistakes.map(s => s.name.trim()))],
+      rules: [...new Set(cachedSettings.rules.map(s => s.name.trim()))],
+      preMarketMoods: [...new Set((cachedSettings.preMarketMoods || []).map(s => s.name.trim()))],
+      breakeven: cachedSettings.symbols.filter(s => s.breakeven_value).map(s => ({ id: s.id.toString(), symbol: s.name, value: s.breakeven_value }))
+  } : {
     setups: [], sessions: [], timeFrames: [], symbols: [], 
     marketTrends: [], marketTypes: [], breakeven: [], mistakes: [], rules: [], preMarketMoods: []
   });
-  const [rawSymbols, setRawSymbols] = useState([]);
-  const [rawTimeFrames, setRawTimeFrames] = useState([]);
+  const [rawSymbols, setRawSymbols] = useState(cachedSettings ? cachedSettings.symbols || [] : []);
+  const [rawTimeFrames, setRawTimeFrames] = useState(cachedSettings ? cachedSettings.timeFrames || [] : []);
   const [editId, setEditId] = useState(null);
-  const [defaultSettings, setDefaultSettings] = useState({ marketType: "", symbol: "" });
-  const [isLoading, setIsLoading] = useState(true);
+  
+  // Default settings
+  let defMt = "";
+  let defSym = "";
+  if (cachedSettings && cachedSettings.defaults) {
+      defMt = cachedSettings.defaults.default_market_type || "";
+      defSym = cachedSettings.defaults.default_symbol || "";
+  }
+  const [defaultSettings, setDefaultSettings] = useState({ marketType: defMt, symbol: defSym });
+  
+  // Set isLoading to false initially if we have cache, unless we are editing (will fetch trade)
+  const isEditing = typeof window !== "undefined" && window.location.search.includes('edit');
+  const [isLoading, setIsLoading] = useState(isEditing ? true : !cachedSettings);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -553,33 +579,8 @@ export default function AddTradePage() {
     setStep(step + 1);
   };
 
-  const handleSubmit = async () => {
-    if (isSubmitting) return;
-    setIsSubmitting(true);
-    try {
-      const payload = {
-        date,
-        symbol,
-        type,
-        qty: parseFloat(qty) || 0,
-        entry_price: parseFloat(entry) || 0,
-        sl: parseFloat(sl) || null,
-        setup: strategy,
-        time_frame: timeFrame,
-        market_trend: marketTrend,
-        market_type: marketType,
-        session,
-        notes,
-        video_link: videoLink,
-        exits: exits.filter(e => e.qty && e.price).map(e => ({ qty: parseFloat(e.qty), price: parseFloat(e.price) })),
-        biases: Object.entries(biases).map(([tf, b]) => ({ time_frame: tf, bias: b })).filter(b => b.bias),
-        rules: selectedRules,
-        mistakes: selectedMistakes,
-        pre_market_moods: selectedMoods,
-        maximum_rr: maxRr ? parseFloat(maxRr) : null,
-        images: images,
-      };
-
+  const saveTradeMutation = useMutation({
+    mutationFn: async (payload) => {
       const method = editId ? "PUT" : "POST";
       const url = editId ? `${API_URL}/trades/${editId}` : `${API_URL}/trades`;
 
@@ -599,18 +600,50 @@ export default function AddTradePage() {
       if (!res.ok) {
         throw new Error("Failed to save trade");
       }
-
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trades'] });
       setSubmitted(true);
       setTimeout(() => {
         setSubmitted(false);
         setStep(1);
       }, 3000);
-    } catch (e) {
+      setIsSubmitting(false);
+    },
+    onError: (e) => {
       console.error(e);
       alert("Error saving trade to backend");
-    } finally {
       setIsSubmitting(false);
     }
+  });
+
+  const handleSubmit = () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    const payload = {
+      date,
+      symbol,
+      type,
+      qty: parseFloat(qty) || 0,
+      entry_price: parseFloat(entry) || 0,
+      sl: parseFloat(sl) || null,
+      setup: strategy,
+      time_frame: timeFrame,
+      market_trend: marketTrend,
+      market_type: marketType,
+      session,
+      notes,
+      video_link: videoLink,
+      exits: exits.filter(e => e.qty && e.price).map(e => ({ qty: parseFloat(e.qty), price: parseFloat(e.price) })),
+      biases: Object.entries(biases).map(([tf, b]) => ({ time_frame: tf, bias: b })).filter(b => b.bias),
+      rules: selectedRules,
+      mistakes: selectedMistakes,
+      pre_market_moods: selectedMoods,
+      maximum_rr: maxRr ? parseFloat(maxRr) : null,
+      images: images,
+    };
+    saveTradeMutation.mutate(payload);
   };
 
   const stepNames = ["Basic", "Setup", "Bias", "Notes", "Media"];

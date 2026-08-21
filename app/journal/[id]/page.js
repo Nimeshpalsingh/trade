@@ -4,23 +4,31 @@ import { useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import styles from "./tradeDetails.module.css";
 
-import { fetchAndProcessTrades } from "../../utils/tradeUtils";
-import { useEffect } from "react";
+import { fetchAndProcessTrades, fetchSettings } from "../../utils/tradeUtils";
 import { getSession } from "next-auth/react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 export default function TradeDetailsPage() {
   const params = useParams();
   const router = useRouter();
-  const [allTrades, setAllTrades] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [zoomedImage, setZoomedImage] = useState(null);
 
-  useEffect(() => {
-    fetchAndProcessTrades().then(data => {
-      setAllTrades(data);
-      setIsLoading(false);
-    });
-  }, []);
+  const { data: dbSettings = { symbols: [], setups: [], sessions: [] } } = useQuery({
+    queryKey: ['settings'],
+    queryFn: fetchSettings
+  });
+
+  const { data: allTrades = [], isLoading } = useQuery({
+    queryKey: ['trades'],
+    queryFn: async () => {
+      let settings = dbSettings;
+      if (!settings || settings.symbols?.length === 0) {
+          settings = await fetchSettings();
+      }
+      return await fetchAndProcessTrades(settings);
+    }
+  });
 
   const currentIndex = allTrades.findIndex(t => String(t.id) === String(params.id));
   const trade = allTrades[currentIndex];
@@ -50,27 +58,30 @@ export default function TradeDetailsPage() {
   const allMistakesList = ["FOMO", "Overtrading", "Revenge Trading", "RR Not Maintained", "Early Exit"];
   const allRulesList = ["Liquidity Taken", "Inducement", "BOS", "CHOCH", "Order Block", "Fair Value Gap"];
 
-  const handleDelete = async () => {
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      const session = await getSession();
+      if (!session?.apiToken) throw new Error("Not authenticated");
+      const res = await fetch(`${API_URL}/trades/${trade.id}`, {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${session.apiToken}` }
+      });
+      if (!res.ok) throw new Error("Failed to delete trade.");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trades'] });
+      alert("Trade deleted successfully.");
+      router.push("/journal");
+    },
+    onError: (err) => {
+      alert(err.message || "An error occurred while deleting.");
+    }
+  });
+
+  const handleDelete = () => {
     if (confirm("Are you sure you want to delete this trade?")) {
-      try {
-        const session = await getSession();
-        if (!session?.apiToken) { alert("Not authenticated"); return; }
-        const token = `Bearer ${session.apiToken}`;
-        const res = await fetch(`${API_URL}/trades/${trade.id}`, {
-          method: "DELETE",
-          headers: {
-            "Authorization": token
-          }
-        });
-        if (res.ok) {
-          alert("Trade deleted successfully.");
-          router.push("/journal");
-        } else {
-          alert("Failed to delete trade.");
-        }
-      } catch (err) {
-        alert("An error occurred while deleting.");
-      }
+      deleteMutation.mutate();
     }
   };
 

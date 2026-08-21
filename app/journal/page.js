@@ -10,6 +10,7 @@ const currentYear = today.getFullYear();
 const currentMonth = String(today.getMonth() + 1).padStart(2, '0');
 
 import { fetchAndProcessTrades, fetchSettings } from "../utils/tradeUtils";
+import { useQuery } from "@tanstack/react-query";
 
 export default function JournalPage() {
   const router = useRouter();
@@ -51,41 +52,39 @@ export default function JournalPage() {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [advFilters, setAdvFilters] = useState(initialAdvFilters);
 
-  const [allTrades, setAllTrades] = useState([]);
-  const [dbSettings, setDbSettings] = useState({ symbols: [], setups: [], sessions: [] });
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: dbSettings = { symbols: [], setups: [], sessions: [] }, isLoading: isSettingsLoading } = useQuery({
+    queryKey: ['settings'],
+    queryFn: fetchSettings
+  });
 
-  useEffect(() => {
-    const fetchTrades = async () => {
-      try {
-        const settings = await fetchSettings();
-        const trades = await fetchAndProcessTrades(settings);
-        setDbSettings(settings);
-        const formatted = trades.map(t => {
-          const hasExits = t.exits && t.exits.length > 0;
-          let status = 'Active';
-          if (hasExits) status = 'Completed';
-
-          return {
-            ...t,
-            id: t.id.toString(),
-            time: "00:00 AM",
-            timestamp: new Date(t.date).getTime(),
-            type: t.type === 'LONG' ? 'Buy' : 'Sell',
-            setups: Array.isArray(t.setup) ? t.setup : [t.setup].filter(Boolean),
-            status: status,
-            isBookmarked: false
-          };
-        });
-        setAllTrades(formatted);
-      } catch (err) {
-        console.error("Failed to load trades", err);
-      } finally {
-        setIsLoading(false);
+  const { data: allTrades = [], isLoading: isTradesLoading } = useQuery({
+    queryKey: ['trades'],
+    queryFn: async () => {
+      let settings = dbSettings;
+      if (!settings || settings.symbols?.length === 0) {
+          settings = await fetchSettings();
       }
-    };
-    fetchTrades();
-  }, []);
+      const trades = await fetchAndProcessTrades(settings);
+      return trades.map(t => {
+        const hasExits = t.exits && t.exits.length > 0;
+        let status = 'Active';
+        if (hasExits) status = 'Completed';
+
+        return {
+          ...t,
+          id: t.id.toString(),
+          time: "00:00 AM",
+          timestamp: new Date(t.date).getTime(),
+          type: t.type === 'LONG' ? 'Buy' : 'Sell',
+          setups: Array.isArray(t.setup) ? t.setup : [t.setup].filter(Boolean),
+          status: status,
+          isBookmarked: false
+        };
+      });
+    }
+  });
+
+  const isLoading = isSettingsLoading || isTradesLoading;
 
   const filteredTrades = useMemo(() => {
     let result = allTrades;

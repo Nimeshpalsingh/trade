@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { getSession } from "next-auth/react";
 import { API_URL } from "../utils/apiConfig";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
 import s from "./storymode.module.css";
 
 // Build steps dynamically from settings
@@ -42,6 +43,7 @@ function buildSteps(settings, rawTimeFrames) {
 
 export default function StoryMode({ settings, rawSymbols, rawTimeFrames, defaultSettings }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState({ date: new Date().toISOString().split("T")[0] });
   const [storyHtml, setStoryHtml] = useState("Aaj maine ");
@@ -203,72 +205,8 @@ export default function StoryMode({ settings, rawSymbols, rawTimeFrames, default
   };
 
   // Calculate and submit
-  const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      const en = parseFloat(answers.entry) || 0;
-      const slPts = parseFloat(answers.slPoints) || 0;
-      const tradeType = answers.type || "LONG";
-      const slPrice = tradeType === "LONG" ? en - slPts : en + slPts;
-
-      // Calculate qty from risk
-      const risk = parseFloat(answers.riskAmount) || 0;
-      const isCrypto = answers.marketType?.toLowerCase().includes("crypto");
-      let qty = 0;
-      if (slPts > 0 && risk > 0) {
-        if (isCrypto) {
-          const riskUsdt = risk / 86;
-          qty = Math.floor((riskUsdt / slPts) * 100) / 100;
-        } else {
-          qty = Math.round(risk / slPts);
-        }
-      }
-
-      // Build exits from RR
-      const rrStr = answers.rewardRatio || "2";
-      const rrValues = rrStr.split(",").map(x => parseFloat(x.trim())).filter(n => !isNaN(n));
-      let exits = [];
-      
-      // Check if SL Hit
-      if (answers.exitType === "SL Hit") {
-        exits = [{ qty, price: slPrice }];
-      } else if (answers.exitPrice) {
-        exits = [{ qty, price: parseFloat(answers.exitPrice) }];
-      } else {
-        const splitQty = Math.floor(qty / rrValues.length);
-        const remainder = qty % rrValues.length;
-        exits = rrValues.map((rr, i) => {
-          const tpPts = slPts * rr;
-          const tpPrice = tradeType === "LONG" ? en + tpPts : en - tpPts;
-          return { qty: i === 0 ? splitQty + remainder : splitQty, price: parseFloat(tpPrice.toFixed(2)) };
-        });
-      }
-
-      const biasEntries = answers.biases ? Object.entries(answers.biases).filter(([, v]) => v).map(([tf, b]) => ({ time_frame: tf, bias: b })) : [];
-
-      const payload = {
-        date: answers.date || new Date().toISOString().split("T")[0],
-        symbol: answers.symbol,
-        type: tradeType,
-        qty,
-        entry_price: en,
-        sl: slPrice || null,
-        setup: answers.strategy,
-        time_frame: answers.timeFrame,
-        market_trend: answers.marketTrend,
-        market_type: answers.marketType,
-        session: answers.session || "",
-        notes: answers.notes || "",
-        video_link: answers.videoLink || "",
-        exits: exits.filter(e => e.qty > 0 && e.price > 0),
-        biases: biasEntries,
-        rules: answers.followedRules || [],
-        mistakes: Array.isArray(answers.mistakes) ? answers.mistakes : [],
-        pre_market_moods: Array.isArray(answers.moods) ? answers.moods : [],
-        maximum_rr: answers.maxRr ? parseFloat(answers.maxRr) : null,
-        images: images,
-      };
-
+  const saveTradeMutation = useMutation({
+    mutationFn: async (payload) => {
       const session = await getSession();
       if (!session?.apiToken) throw new Error("Not authenticated");
       const res = await fetch(`${API_URL}/trades`, {
@@ -277,13 +215,88 @@ export default function StoryMode({ settings, rawSymbols, rawTimeFrames, default
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error("Failed");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trades'] });
       setSaveMsg("✓ Trade saved!");
-    } catch (e) {
+      setIsSaving(false);
+    },
+    onError: (e) => {
       console.error(e);
       setSaveMsg("✗ Error saving trade");
-    } finally {
       setIsSaving(false);
     }
+  });
+
+  const handleSave = () => {
+    setIsSaving(true);
+    setSaveMsg("Saving...");
+
+    const en = parseFloat(answers.entry) || 0;
+    const slPts = parseFloat(answers.slPoints) || 0;
+    const tradeType = answers.type || "LONG";
+    const slPrice = tradeType === "LONG" ? en - slPts : en + slPts;
+
+    // Calculate qty from risk
+    const risk = parseFloat(answers.riskAmount) || 0;
+    const isCrypto = answers.marketType?.toLowerCase().includes("crypto");
+    let qty = 0;
+    if (slPts > 0 && risk > 0) {
+      if (isCrypto) {
+        const riskUsdt = risk / 86;
+        qty = Math.floor((riskUsdt / slPts) * 100) / 100;
+      } else {
+        qty = Math.round(risk / slPts);
+      }
+    }
+
+    // Build exits from RR
+    const rrStr = answers.rewardRatio || "2";
+    const rrValues = rrStr.split(",").map(x => parseFloat(x.trim())).filter(n => !isNaN(n));
+    let exits = [];
+    
+    // Check if SL Hit
+    if (answers.exitType === "SL Hit") {
+      exits = [{ qty, price: slPrice }];
+    } else if (answers.exitPrice) {
+      exits = [{ qty, price: parseFloat(answers.exitPrice) }];
+    } else {
+      const splitQty = Math.floor(qty / rrValues.length);
+      const remainder = qty % rrValues.length;
+      exits = rrValues.map((rr, i) => {
+        const tpPts = slPts * rr;
+        const tpPrice = tradeType === "LONG" ? en + tpPts : en - tpPts;
+        return { qty: i === 0 ? splitQty + remainder : splitQty, price: parseFloat(tpPrice.toFixed(2)) };
+      });
+    }
+
+    const biasEntries = answers.biases ? Object.entries(answers.biases).filter(([, v]) => v).map(([tf, b]) => ({ time_frame: tf, bias: b })) : [];
+
+    const payload = {
+      date: answers.date || new Date().toISOString().split("T")[0],
+      symbol: answers.symbol,
+      type: tradeType,
+      qty,
+      entry_price: en,
+      sl: slPrice || null,
+      setup: answers.strategy,
+      time_frame: answers.timeFrame,
+      market_trend: answers.marketTrend,
+      market_type: answers.marketType,
+      session: answers.session || "",
+      notes: answers.notes || "",
+      video_link: answers.videoLink || "",
+      exits: exits.filter(e => e.qty > 0 && e.price > 0),
+      biases: biasEntries,
+      rules: answers.followedRules || [],
+      mistakes: Array.isArray(answers.mistakes) ? answers.mistakes : [],
+      pre_market_moods: Array.isArray(answers.moods) ? answers.moods : [],
+      maximum_rr: answers.maxRr ? parseFloat(answers.maxRr) : null,
+      images: images,
+    };
+
+    saveTradeMutation.mutate(payload);
   };
 
   const restart = () => {

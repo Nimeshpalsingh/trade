@@ -1,6 +1,7 @@
 import "./globals.css";
 import AuthProvider from "./components/AuthProvider";
 import DisciplineWarning from "./components/DisciplineWarning";
+import Providers from "./providers";
 
 export const metadata = {
   title: "TradeJournal Pro - Smart Trading Analytics",
@@ -16,10 +17,12 @@ export default function RootLayout({ children }) {
         <meta name="theme-color" content="#0a0b0f" />
       </head>
       <body suppressHydrationWarning>
-        <AuthProvider>
-          <DisciplineWarning />
-          {children}
-        </AuthProvider>
+        <Providers>
+          <AuthProvider>
+            <DisciplineWarning />
+            {children}
+          </AuthProvider>
+        </Providers>
       </body>
     </html>
   );
