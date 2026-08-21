@@ -157,3 +157,124 @@ export const fetchAndProcessTrades = async (existingSettings = null) => {
     })();
     return tradesPromise;
 };
+
+// --- Backtest API Functions ---
+
+export const fetchBacktests = async () => {
+    try {
+        const session = await getSession();
+        if (!session?.apiToken) return [];
+        const res = await fetch(`${API_URL}/backtests`, {
+            headers: { "Authorization": `Bearer ${session.apiToken}`, "Accept": "application/json" }
+        });
+        if (!res.ok) throw new Error("Failed to fetch backtests");
+        const data = await res.json();
+        return data.data || [];
+    } catch (e) {
+        console.error("fetchBacktests error:", e);
+        return [];
+    }
+};
+
+export const saveBacktest = async (btData) => {
+    try {
+        const session = await getSession();
+        if (!session?.apiToken) throw new Error("No session");
+        const res = await fetch(`${API_URL}/backtests`, {
+            method: 'POST',
+            headers: { "Authorization": `Bearer ${session.apiToken}`, "Accept": "application/json", "Content-Type": "application/json" },
+            body: JSON.stringify(btData)
+        });
+        if (!res.ok) throw new Error("Failed to save backtest");
+        const data = await res.json();
+        return data.data;
+    } catch (e) {
+        console.error("saveBacktest error:", e);
+        throw e;
+    }
+};
+
+export const updateBacktest = async (id, btData) => {
+    try {
+        const session = await getSession();
+        if (!session?.apiToken) throw new Error("No session");
+        const res = await fetch(`${API_URL}/backtests/${id}`, {
+            method: 'PUT',
+            headers: { "Authorization": `Bearer ${session.apiToken}`, "Accept": "application/json", "Content-Type": "application/json" },
+            body: JSON.stringify(btData)
+        });
+        if (!res.ok) throw new Error("Failed to update backtest");
+        const data = await res.json();
+        return data.data;
+    } catch (e) {
+        console.error("updateBacktest error:", e);
+        throw e;
+    }
+};
+
+export const deleteBacktest = async (id) => {
+    try {
+        const session = await getSession();
+        if (!session?.apiToken) throw new Error("No session");
+        const res = await fetch(`${API_URL}/backtests/${id}`, {
+            method: 'DELETE',
+            headers: { "Authorization": `Bearer ${session.apiToken}`, "Accept": "application/json" }
+        });
+        if (!res.ok) throw new Error("Failed to delete backtest");
+        return true;
+    } catch (e) {
+        console.error("deleteBacktest error:", e);
+        throw e;
+    }
+};
+
+export const getBacktest = async (id) => {
+    try {
+        const session = await getSession();
+        if (!session?.apiToken) throw new Error("No session");
+        const res = await fetch(`${API_URL}/backtests/${id}`, {
+            headers: { "Authorization": `Bearer ${session.apiToken}`, "Accept": "application/json" }
+        });
+        if (!res.ok) throw new Error("Failed to fetch backtest");
+        const data = await res.json();
+        return data.data;
+    } catch (e) {
+        console.error("getBacktest error:", e);
+        throw e;
+    }
+};
+
+export const shareBacktest = async (id, email, role) => {
+    try {
+        const session = await getSession();
+        if (!session?.apiToken) throw new Error("No session");
+        const res = await fetch(`${API_URL}/backtests/${id}/share`, {
+            method: 'POST',
+            headers: { "Authorization": `Bearer ${session.apiToken}`, "Accept": "application/json", "Content-Type": "application/json" },
+            body: JSON.stringify({ email, role })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "Failed to share backtest");
+        return data;
+    } catch (e) {
+        console.error("shareBacktest error:", e);
+        throw e;
+    }
+};
+
+export const removeShareBacktest = async (id, userId) => {
+    try {
+        const session = await getSession();
+        if (!session?.apiToken) throw new Error("No session");
+        const res = await fetch(`${API_URL}/backtests/${id}/share/${userId}`, {
+            method: 'DELETE',
+            headers: { "Authorization": `Bearer ${session.apiToken}`, "Accept": "application/json" }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "Failed to remove share");
+        return data;
+    } catch (e) {
+        console.error("removeShareBacktest error:", e);
+        throw e;
+    }
+};

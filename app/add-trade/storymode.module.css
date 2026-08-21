@@ -472,7 +472,10 @@
 /* Answered chat history */
 .answeredBubble {
   opacity: 0.55;
-  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.answeredBubble:hover {
+  opacity: 0.8;
 }
 
 /* PnL Preview in story */

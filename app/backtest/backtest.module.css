@@ -1,0 +1,396 @@
+.header {
+  height: 64px;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  position: sticky;
+  top: 0;
+  background: rgba(11, 11, 15, 0.9);
+  backdrop-filter: blur(12px);
+  z-index: 10;
+}
+
+.headerTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.main {
+  padding: 24px 20px 100px;
+  max-width: 950px;
+  margin: 0 auto;
+}
+
+.topBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.newBtn {
+  background: var(--accent-purple);
+  color: #fff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.newBtn:hover {
+  background: #6b3fe0;
+  box-shadow: 0 4px 12px rgba(124, 77, 255, 0.3);
+}
+
+.emptyState {
+  text-align: center;
+  padding: 60px 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed var(--border-medium);
+  border-radius: 12px;
+  color: var(--text-secondary);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.2s ease;
+}
+
+.card:hover {
+  border-color: var(--accent-purple);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.cardHeader h4 {
+  margin: 0;
+  font-size: 16px;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.deleteIcon {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 4px;
+}
+
+.deleteIcon:hover {
+  color: var(--loss-red);
+}
+
+.cardBody {
+  flex: 1;
+  cursor: pointer;
+  margin-bottom: 16px;
+}
+
+.cardRow {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.cardRow span {
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-right: 6px;
+}
+
+.openBtn {
+  width: 100%;
+  padding: 8px;
+  background: rgba(124, 77, 255, 0.1);
+  color: #c4a1ff;
+  border: 1px solid rgba(124, 77, 255, 0.2);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.openBtn:hover {
+  background: var(--accent-purple);
+  color: #fff;
+}
+
+/* Create Form */
+.createBox {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-medium);
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.boxTitle {
+  margin: 0 0 20px;
+  font-size: 18px;
+  color: var(--text-primary);
+}
+
+.inputGroup {
+  margin-bottom: 16px;
+}
+
+.inputGroup label {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.inputGroup input {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.inputGroup input:focus {
+  outline: none;
+  border-color: var(--accent-purple);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.cancelBtn {
+  background: transparent;
+  border: 1px solid var(--border-medium);
+  color: var(--text-secondary);
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.saveBtn {
+  background: var(--accent-purple);
+  border: none;
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Specific to Table View [id]/page.js */
+.tableWrapper {
+  overflow-x: auto;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  margin-top: 16px;
+}
+
+.btTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 600px;
+}
+
+.btTable th {
+  background: rgba(0, 0, 0, 0.2);
+  color: var(--text-muted);
+  text-align: left;
+  padding: 12px 16px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border-medium);
+  white-space: nowrap;
+}
+
+.btTable td {
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.btTable input {
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  width: 100%;
+  min-width: 80px;
+  outline: none;
+}
+
+.btTable input:focus {
+  border-bottom: 1px solid var(--accent-purple);
+}
+
+.btTable input[type="date"],
+.btTable input[type="time"] {
+  color-scheme: dark;
+}
+
+.btTable input[type="date"]::-webkit-calendar-picker-indicator,
+.btTable input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.7;
+  cursor: pointer;
+}
+
+.btTable select {
+  width: 100%;
+  min-width: 100px;
+  background: rgba(0, 0, 0, 0.2);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 6px 28px 6px 12px;
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23999%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 14px;
+}
+
+.btTable select:focus {
+  border-color: var(--accent-purple);
+}
+
+.btTable tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.addRowBtn {
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  border: 1px dashed var(--border-medium);
+  color: var(--text-muted);
+  border-radius: 0 0 8px 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.addRowBtn:hover {
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-primary);
+}
+
+.mobileOnlyExpandBtn {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .tableWrapper {
+    border: none;
+    background: transparent;
+  }
+  .btTable {
+    display: block;
+    min-width: unset;
+  }
+  .btTable thead {
+    display: none;
+  }
+  .btTable tbody {
+    display: block;
+  }
+  .btTable tr {
+    display: flex;
+    flex-direction: column;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    margin-bottom: 16px;
+    padding: 8px 0;
+  }
+  .btTable td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    white-space: normal;
+  }
+  .btTable td:last-child {
+    border-bottom: none;
+  }
+  .btTable td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-right: 16px;
+    min-width: 100px;
+    text-align: left;
+  }
+  .btTable input {
+    text-align: right;
+    flex: 1;
+    min-width: unset;
+  }
+  .btTable select {
+    text-align: left;
+    flex: 1;
+    min-width: unset;
+    padding-left: 12px;
+    padding-right: 28px !important;
+  }
+  .btTable td > div {
+    justify-content: flex-end;
+  }
+  .mobileOnlyExpandBtn {
+    display: inline-block !important;
+  }
+  .mobileCollapsed td {
+    display: none !important;
+  }
+  .mobileCollapsed td:first-child,
+  .mobileCollapsed td:nth-child(2),
+  .mobileCollapsed td.alwaysVisibleCol,
+  .mobileCollapsed td:last-child {
+    display: flex !important;
+  }
+}

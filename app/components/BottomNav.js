@@ -15,12 +15,25 @@ const navItems = [
       </svg>
     ),
   },
+  // {
+  //   label: "PnL",
+  //   path: "/pnl",
+  //   icon: (
+  //     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+  //       <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+  //     </svg>
+  //   ),
+  // },
   {
-    label: "PnL",
-    path: "/pnl",
+    label: "Journal",
+    path: "/journal",
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <polyline points="14 2 14 8 20 8" />
+        <line x1="16" y1="13" x2="8" y2="13" />
+        <line x1="16" y1="17" x2="8" y2="17" />
+        <polyline points="10 9 9 9 8 9" />
       </svg>
     ),
   },
@@ -36,15 +49,11 @@ const navItems = [
     isCenter: true,
   },
   {
-    label: "Journal",
-    path: "/journal",
+    label: "Lab",
+    path: "/backtest",
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-        <polyline points="14 2 14 8 20 8" />
-        <line x1="16" y1="13" x2="8" y2="13" />
-        <line x1="16" y1="17" x2="8" y2="17" />
-        <polyline points="10 9 9 9 8 9" />
+        <path d="M10 2v7.31M14 2v7.31M8.5 2h7M7 21h10a2 2 0 0 0 2-2v-1.71a4 4 0 0 0-1.17-2.83L12 9 6.17 14.46A4 4 0 0 0 5 17.29V19a2 2 0 0 0 2 2z"/>
       </svg>
     ),
   },
