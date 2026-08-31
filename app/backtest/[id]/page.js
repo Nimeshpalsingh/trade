@@ -66,74 +66,6 @@ export default function BacktestDetail({ params }) {
     };
     reader.readAsDataURL(file);
   };
-
-  useEffect(() => {
-    const handleGlobalPaste = (e) => {
-      const items = e.clipboardData?.items;
-      if (!items) return;
-      let pastedFiles = [];
-      for (let i = 0; i < items.length; i++) {
-        if (items[i].type.indexOf('image') !== -1) {
-          pastedFiles.push(items[i].getAsFile());
-        }
-      }
-      if (pastedFiles.length === 0) return;
-
-      if (isStoryMode) {
-        if (smSteps[smCurrent]?.type === 'image') {
-           let count = 0;
-           let arr = [];
-           pastedFiles.slice(0, 3).forEach(file => {
-             processImageFile(file, (base64) => {
-               arr.push(base64);
-               count++;
-               if (count === Math.min(pastedFiles.length, 3)) {
-                 setSmInput(prev => {
-                   const existing = Array.isArray(prev) ? prev : [];
-                   return [...existing, ...arr].slice(0, 3);
-                 });
-               }
-             });
-           });
-        }
-      } else {
-        if (hoveredCellRef.current) {
-          const { rowId, col } = hoveredCellRef.current;
-          const conf = bt?.columnConfig?.[col];
-          const type = conf?.type || (col.toLowerCase().includes('time') ? 'time' : 'text');
-          if (type === 'image') {
-             const row = data.find(r => r.id === rowId);
-             if (row) {
-                 let count = 0;
-                 let arr = [];
-                 pastedFiles.slice(0, 3).forEach(file => {
-                   processImageFile(file, (base64) => {
-                     arr.push(base64);
-                     count++;
-                     if (count === Math.min(pastedFiles.length, 3)) {
-                       const existing = row[col] || [];
-                       const newData = data.map(r => {
-                         if (r.id === rowId) {
-                           return { ...r, [col]: [...existing, ...arr].slice(0, 3) };
-                         }
-                         return r;
-                       });
-                       setData(newData);
-                       if (bt) {
-                          updateBacktest(id, { data: newData }).catch(e => console.error(e));
-                       }
-                     }
-                   });
-                 });
-             }
-          }
-        }
-      }
-    };
-    window.addEventListener('paste', handleGlobalPaste);
-    return () => window.removeEventListener('paste', handleGlobalPaste);
-  }, [isStoryMode, smCurrent, smSteps, data, bt, id]);
-
   useEffect(() => {
     // Fetch global symbols for auto-suggest
     fetchSettings()
@@ -554,6 +486,73 @@ export default function BacktestDetail({ params }) {
       }
     }
   };
+
+  useEffect(() => {
+    const handleGlobalPaste = (e) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      let pastedFiles = [];
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          pastedFiles.push(items[i].getAsFile());
+        }
+      }
+      if (pastedFiles.length === 0) return;
+
+      if (isStoryMode) {
+        if (smSteps[smCurrent]?.type === 'image') {
+           let count = 0;
+           let arr = [];
+           pastedFiles.slice(0, 3).forEach(file => {
+             processImageFile(file, (base64) => {
+               arr.push(base64);
+               count++;
+               if (count === Math.min(pastedFiles.length, 3)) {
+                 setSmInput(prev => {
+                   const existing = Array.isArray(prev) ? prev : [];
+                   return [...existing, ...arr].slice(0, 3);
+                 });
+               }
+             });
+           });
+        }
+      } else {
+        if (hoveredCellRef.current) {
+          const { rowId, col } = hoveredCellRef.current;
+          const conf = bt?.columnConfig?.[col];
+          const type = conf?.type || (col.toLowerCase().includes('time') ? 'time' : 'text');
+          if (type === 'image') {
+             const row = data.find(r => r.id === rowId);
+             if (row) {
+                 let count = 0;
+                 let arr = [];
+                 pastedFiles.slice(0, 3).forEach(file => {
+                   processImageFile(file, (base64) => {
+                     arr.push(base64);
+                     count++;
+                     if (count === Math.min(pastedFiles.length, 3)) {
+                       const existing = row[col] || [];
+                       const newData = data.map(r => {
+                         if (r.id === rowId) {
+                           return { ...r, [col]: [...existing, ...arr].slice(0, 3) };
+                         }
+                         return r;
+                       });
+                       setData(newData);
+                       if (bt) {
+                          updateBacktest(id, { data: newData }).catch(e => console.error(e));
+                       }
+                     }
+                   });
+                 });
+             }
+          }
+        }
+      }
+    };
+    window.addEventListener('paste', handleGlobalPaste);
+    return () => window.removeEventListener('paste', handleGlobalPaste);
+  }, [isStoryMode, smCurrent, smSteps, data, bt, id]);
 
   if (!bt) return <div className="page-wrapper"><div style={{padding:'40px'}}>Loading...</div></div>;
 
