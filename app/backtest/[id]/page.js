@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, use, useRef } from "react";
 import { useRouter } from "next/navigation";
 import BottomNav from "../../components/BottomNav";
 import s from "../backtest.module.css";
@@ -41,6 +41,7 @@ export default function BacktestDetail({ params }) {
   const [newColOptions, setNewColOptions] = useState("");
 
   const [toastMsg, setToastMsg] = useState("");
+  const hoveredCellRef = useRef(null);
 
   const showToast = (msg) => {
     setToastMsg(msg);
@@ -65,6 +66,73 @@ export default function BacktestDetail({ params }) {
     };
     reader.readAsDataURL(file);
   };
+
+  useEffect(() => {
+    const handleGlobalPaste = (e) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      let pastedFiles = [];
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          pastedFiles.push(items[i].getAsFile());
+        }
+      }
+      if (pastedFiles.length === 0) return;
+
+      if (isStoryMode) {
+        if (smSteps[smCurrent]?.type === 'image') {
+           let count = 0;
+           let arr = [];
+           pastedFiles.slice(0, 3).forEach(file => {
+             processImageFile(file, (base64) => {
+               arr.push(base64);
+               count++;
+               if (count === Math.min(pastedFiles.length, 3)) {
+                 setSmInput(prev => {
+                   const existing = Array.isArray(prev) ? prev : [];
+                   return [...existing, ...arr].slice(0, 3);
+                 });
+               }
+             });
+           });
+        }
+      } else {
+        if (hoveredCellRef.current) {
+          const { rowId, col } = hoveredCellRef.current;
+          const conf = bt?.columnConfig?.[col];
+          const type = conf?.type || (col.toLowerCase().includes('time') ? 'time' : 'text');
+          if (type === 'image') {
+             const row = data.find(r => r.id === rowId);
+             if (row) {
+                 let count = 0;
+                 let arr = [];
+                 pastedFiles.slice(0, 3).forEach(file => {
+                   processImageFile(file, (base64) => {
+                     arr.push(base64);
+                     count++;
+                     if (count === Math.min(pastedFiles.length, 3)) {
+                       const existing = row[col] || [];
+                       const newData = data.map(r => {
+                         if (r.id === rowId) {
+                           return { ...r, [col]: [...existing, ...arr].slice(0, 3) };
+                         }
+                         return r;
+                       });
+                       setData(newData);
+                       if (bt) {
+                          updateBacktest(id, { data: newData }).catch(e => console.error(e));
+                       }
+                     }
+                   });
+                 });
+             }
+          }
+        }
+      }
+    };
+    window.addEventListener('paste', handleGlobalPaste);
+    return () => window.removeEventListener('paste', handleGlobalPaste);
+  }, [isStoryMode, smCurrent, smSteps, data, bt, id]);
 
   useEffect(() => {
     // Fetch global symbols for auto-suggest
@@ -828,7 +896,7 @@ export default function BacktestDetail({ params }) {
                     const conf = bt.columnConfig?.[col];
                     
                     return (
-                      <td key={col} data-label={col} className={alwaysVis ? s.alwaysVisibleCol : ''}>
+                      <td key={col} data-label={col} className={alwaysVis ? s.alwaysVisibleCol : ''} onMouseEnter={() => { if(inputType === 'image') hoveredCellRef.current = { rowId: row.id, col }; }} onMouseLeave={() => { hoveredCellRef.current = null; }}>
                         {inputType === 'select' && conf?.options ? (
                           <select 
                             value={row[col] || ""} 
